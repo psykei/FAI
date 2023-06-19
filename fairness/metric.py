@@ -1,7 +1,7 @@
 import numpy as np
 import fairness
 
-EPSILON: float = 1e-9
+EPSILON: float = 1e-2
 DISPARATE_IMPACT_THRESHOLD: float = 0.8
 
 
@@ -24,10 +24,11 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON) -> bool:
             protected_feature_indices = np.where(p == protected_feature_value)
             predictions = y[protected_feature_indices]
             conditional_probability = np.sum(predictions) / len(predictions)
-            if abs(probability - conditional_probability) > epsilon:
+            prob_abs_diff = abs(probability - conditional_probability)
+            if prob_abs_diff > epsilon:
                 result = True
                 fairness.logger.info(
-                    f"Demographic parity violated for output value {output_value} and protected feature value {protected_feature_value}"
+                    f"Demographic parity violated for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {prob_abs_diff}"
                 )
                 break
     return result
@@ -59,10 +60,11 @@ def is_disparate_impact(
         minority_indices = np.where(p == value)
         minority_predictions = y[minority_indices]
         minority_probability = np.sum(minority_predictions) / len(minority_predictions)
-        if minority_probability / majority_probability <= threshold:
+        ratio = minority_probability / majority_probability
+        if ratio <= threshold:
             result = True
             fairness.logger.info(
-                f"There is disparate impact for protected feature value {value}"
+                f"There is disparate impact for protected feature value {value} with ratio {ratio}"
             )
             break
     return result
@@ -77,6 +79,7 @@ def is_equalized_odds(
     :param p: protected feature
     :param y_true: ground truth
     :param y_pred: prediction
+    :param epsilon: threshold for equalized odds
     :return: True if equalized odds is satisfied, False otherwise
     """
     result = False
@@ -92,10 +95,15 @@ def is_equalized_odds(
             indices = np.intersect1d(true_output_indices, protected_feature_indices)
             predictions = y_pred[indices]
             double_conditional_probability = np.sum(predictions) / len(predictions)
-            if abs(conditional_probability - double_conditional_probability) > epsilon:
+            probability_abs_diff = abs(conditional_probability - double_conditional_probability)
+            if probability_abs_diff > epsilon:
                 result = True
                 fairness.logger.info(
-                    f"Equalized odds violated for output value {output_value} and protected feature value {protected_feature_value}"
+                    f"Equalized odds violated for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {probability_abs_diff}"
                 )
                 break
+            else:
+                fairness.logger.info(
+                    f"Equalized odds satisfied for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {probability_abs_diff}"
+                )
     return result
