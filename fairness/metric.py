@@ -28,12 +28,12 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON) -> bool:
             if prob_abs_diff > epsilon:
                 result = False
                 fairness.logger.info(
-                    f"Demographic parity violated for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {prob_abs_diff}"
+                    f"Demographic parity violated for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {prob_abs_diff:.4f}"
                 )
                 break
             else:
                 fairness.logger.info(
-                    f"Demographic parity satisfied for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {prob_abs_diff}"
+                    f"Demographic parity satisfied for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {prob_abs_diff:.4f}"
                 )
     return result
 
@@ -68,9 +68,13 @@ def is_disparate_impact(
         if ratio <= threshold:
             result = True
             fairness.logger.info(
-                f"There is disparate impact for protected feature value {value} with ratio {ratio}"
+                f"There is disparate impact for protected feature value {value} with ratio {ratio:.4f}"
             )
             break
+        else:
+            fairness.logger.info(
+                f"There is no disparate impact for protected feature value {value} with ratio {ratio:.4f}"
+            )
     return result
 
 
@@ -111,11 +115,11 @@ def is_equalized_odds(
             if probability_abs_diff > epsilon:
                 result = False
                 fairness.logger.info(
-                    f"Equalized odds violated for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {probability_abs_diff}"
+                    f"Equalized odds violated for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {probability_abs_diff:.4f}"
                 )
                 break
             else:
                 fairness.logger.info(
-                    f"Equalized odds satisfied for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {probability_abs_diff}"
+                    f"Equalized odds satisfied for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {probability_abs_diff:.4f}"
                 )
     return result
