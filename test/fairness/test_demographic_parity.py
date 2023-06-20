@@ -31,3 +31,7 @@ class TestDemographicParity(unittest.TestCase):
 
     def test_unfair_model_with_high_epsilon(self):
         self.assertFalse(is_demographic_parity(self.adult_train_p, self.adult_train_y, epsilon=self.high_epsilon))
+
+
+if __name__ == "__main__":
+    unittest.main()
