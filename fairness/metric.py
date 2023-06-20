@@ -88,11 +88,15 @@ def is_equalized_odds(
     """
     result = True
     true_output_values = np.unique(y_true)
-    assert len(true_output_values) <= 2, "Equalized odds is only defined for binary classification problems"
+    assert (
+        len(true_output_values) <= 2
+    ), "Equalized odds is only defined for binary classification problems"
     for output_value in true_output_values:
         true_output_indices = np.where(y_true == output_value)
         protected_feature_values = np.unique(p[true_output_indices])
-        assert len(protected_feature_values) <= 2, "Equalized odds is only defined for binary protected features"
+        assert (
+            len(protected_feature_values) <= 2
+        ), "Equalized odds is only defined for binary protected features"
         conditional_probability = np.sum(y_pred[true_output_indices]) / len(
             y_pred[true_output_indices]
         )
@@ -101,7 +105,9 @@ def is_equalized_odds(
             indices = np.intersect1d(true_output_indices, protected_feature_indices)
             predictions = y_pred[indices]
             double_conditional_probability = np.sum(predictions) / len(predictions)
-            probability_abs_diff = abs(conditional_probability - double_conditional_probability)
+            probability_abs_diff = abs(
+                conditional_probability - double_conditional_probability
+            )
             if probability_abs_diff > epsilon:
                 result = False
                 fairness.logger.info(
