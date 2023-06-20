@@ -54,3 +54,7 @@ class TestEqualizedOdds(unittest.TestCase):
         adult_prediction = self._get_prediction_from_decision_tree(self.adult_train_x, self.adult_train_y,
                                                                    self.adult_test_x)
         self.assertTrue(is_equalized_odds(self.adult_test_p, self.adult_test_y, adult_prediction, epsilon=self.high_epsilon))
+
+
+if __name__ == "__main__":
+    unittest.main()

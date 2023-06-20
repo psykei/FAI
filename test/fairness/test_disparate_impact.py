@@ -30,3 +30,7 @@ class TestDisparateImpact(unittest.TestCase):
 
         def test_unfair_model_with_low_threshold(self):
             self.assertFalse(is_disparate_impact(self.adult_train_p, self.adult_train_y, threshold=self.low_threshold))
+
+
+if __name__ == "__main__":
+    unittest.main()
