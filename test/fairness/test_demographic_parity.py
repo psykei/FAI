@@ -8,7 +8,7 @@ class TestDemographicParity(unittest.TestCase):
     adult_train_p = None
     adult_train_y = None
     protected_attribute = "Sex"
-    high_epsilon = 0.4
+    low_epsilon = 1e-4
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -25,13 +25,13 @@ class TestDemographicParity(unittest.TestCase):
         self.adult_train_p = adult_train_dataset[self.protected_attribute].values
         self.adult_train_y = adult_train_dataset.iloc[:, -1].values
 
-    def test_unfair_model(self):
+    def test_model(self):
         self.assertTrue(is_demographic_parity(self.adult_train_p, self.adult_train_y))
 
-    def test_unfair_model_with_high_epsilon(self):
+    def test_model_with_low_epsilon(self):
         self.assertFalse(
             is_demographic_parity(
-                self.adult_train_p, self.adult_train_y, epsilon=self.high_epsilon
+                self.adult_train_p, self.adult_train_y, epsilon=self.low_epsilon
             )
         )
 
