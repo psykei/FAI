@@ -28,9 +28,13 @@ class AdultLoader:
             return train_df, val_df, test_df
 
         def setup(self, df: pd.DataFrame) -> pd.DataFrame:
-            df.drop(["Education"], axis=1, inplace=True)
             df.income = df.income.apply(
                 lambda x: 0 if x.replace(" ", "") in ('<=50K', "<=50K.") else 1)
+            for column in AdultLoader.duplicate:
+                df.drop([column], axis=1, inplace=True)
+            for column in AdultLoader.categorical:
+                df = pd.concat([df, pd.get_dummies(df[column], prefix=column)], axis=1)
+                df.drop([column], axis=1, inplace=True)
             df['Sex'] = df['Sex'].apply(lambda x: 0 if x in ['Male', ' Male', 'Male ', ' Male ', ' Male.'] else 1)
             return df
 
@@ -38,6 +42,8 @@ class AdultLoader:
     columns = ["Age", "WorkClass", "Fnlwgt", "Education", "EducationNumeric", "MaritalStatus",
                "Occupation", "Relationship", "Ethnicity", "Sex", "CapitalGain", "CapitalLoss",
                "HoursPerWeek", "NativeCountry", "income"]
+    duplicate = ["Education"]
+    categorical = ["WorkClass", "MaritalStatus", "Occupation", "Relationship", "Ethnicity", "NativeCountry"]
     processor = AdultProcessor()
 
     def __init__(self, path: str = DEFAULT_ADULT_DATASET_URL):
