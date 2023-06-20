@@ -31,6 +31,10 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON) -> bool:
                     f"Demographic parity violated for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {prob_abs_diff}"
                 )
                 break
+            else:
+                fairness.logger.info(
+                    f"Demographic parity satisfied for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {prob_abs_diff}"
+                )
     return result
 
 
