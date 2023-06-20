@@ -12,9 +12,9 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON) -> bool:
     :param p: protected feature
     :param y: output
     :param epsilon: threshold for demographic parity
-    :return: True if demographic parity is less than epsilon, False otherwise
+    :return: False if demographic parity is less than epsilon, True otherwise
     """
-    result = False
+    result = True
     output_values = np.unique(y)
     for output_value in output_values:
         output_indices = np.where(y == output_value)
@@ -26,7 +26,7 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON) -> bool:
             conditional_probability = np.sum(predictions) / len(predictions)
             prob_abs_diff = abs(probability - conditional_probability)
             if prob_abs_diff > epsilon:
-                result = True
+                result = False
                 fairness.logger.info(
                     f"Demographic parity violated for output value {output_value} and protected feature value {protected_feature_value} with probability absolute difference {prob_abs_diff}"
                 )
