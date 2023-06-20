@@ -5,7 +5,6 @@ from fairness.metric import is_demographic_parity
 
 
 class TestDemographicParity(unittest.TestCase):
-
     adult_train_p = None
     adult_train_y = None
     protected_attribute = "Sex"
@@ -30,7 +29,11 @@ class TestDemographicParity(unittest.TestCase):
         self.assertTrue(is_demographic_parity(self.adult_train_p, self.adult_train_y))
 
     def test_unfair_model_with_high_epsilon(self):
-        self.assertFalse(is_demographic_parity(self.adult_train_p, self.adult_train_y, epsilon=self.high_epsilon))
+        self.assertFalse(
+            is_demographic_parity(
+                self.adult_train_p, self.adult_train_y, epsilon=self.high_epsilon
+            )
+        )
 
 
 if __name__ == "__main__":

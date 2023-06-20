@@ -1,7 +1,11 @@
 import numpy as np
 from dataset.adult_data_pipeline import AdultLoader
 from fairness import enable_logging
-from fairness.metric import is_demographic_parity, is_disparate_impact, is_equalized_odds
+from fairness.metric import (
+    is_demographic_parity,
+    is_disparate_impact,
+    is_equalized_odds,
+)
 
 enable_logging()
 loader = AdultLoader()
@@ -15,4 +19,3 @@ eo = is_equalized_odds(np.array(train["Sex"]), np.array(train["income"]), predic
 print("Demographic parity: ", dp)
 print("Disparate impact: ", di)
 print("Equalized odds: ", eo)
-

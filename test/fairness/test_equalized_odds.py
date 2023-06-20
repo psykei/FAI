@@ -44,16 +44,34 @@ class TestEqualizedOdds(unittest.TestCase):
         self.adult_test_y = adult_test_dataset.iloc[:, -1].values
 
     def test_perfect_model(self):
-        self.assertTrue(is_equalized_odds(self.adult_train_p, self.adult_train_y, self.adult_train_y))
+        self.assertTrue(
+            is_equalized_odds(
+                self.adult_train_p, self.adult_train_y, self.adult_train_y
+            )
+        )
 
     def test_model_with_low_epsilon(self):
-        adult_prediction = self._get_prediction_from_decision_tree(self.adult_train_x, self.adult_train_y, self.adult_test_x)
-        self.assertFalse(is_equalized_odds(self.adult_test_p, self.adult_test_y, adult_prediction, self.low_epsilon))
+        adult_prediction = self._get_prediction_from_decision_tree(
+            self.adult_train_x, self.adult_train_y, self.adult_test_x
+        )
+        self.assertFalse(
+            is_equalized_odds(
+                self.adult_test_p, self.adult_test_y, adult_prediction, self.low_epsilon
+            )
+        )
 
     def test_model_with_high_epsilon(self):
-        adult_prediction = self._get_prediction_from_decision_tree(self.adult_train_x, self.adult_train_y,
-                                                                   self.adult_test_x)
-        self.assertTrue(is_equalized_odds(self.adult_test_p, self.adult_test_y, adult_prediction, epsilon=self.high_epsilon))
+        adult_prediction = self._get_prediction_from_decision_tree(
+            self.adult_train_x, self.adult_train_y, self.adult_test_x
+        )
+        self.assertTrue(
+            is_equalized_odds(
+                self.adult_test_p,
+                self.adult_test_y,
+                adult_prediction,
+                epsilon=self.high_epsilon,
+            )
+        )
 
 
 if __name__ == "__main__":
