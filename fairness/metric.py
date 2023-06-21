@@ -5,7 +5,7 @@ EPSILON: float = 1e-2
 DISPARATE_IMPACT_THRESHOLD: float = 0.8
 
 
-def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON) -> bool:
+def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON, numeric: bool = False) -> bool or float:
     """
     Demographic parity is a measure of fairness that measures if a value of a protected feature impacts the outcome of a
     prediction. In other words, it measures if the outcome is independent of the protected feature.
@@ -19,7 +19,7 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON) -> bool:
     assert len(np.unique(p)) <= 2, "Demographic parity is only defined for binary protected features"
     parity = np.abs(np.mean(y[p == 0]) - np.mean(y)) + np.abs(np.mean(y[p == 1]) - np.mean(y))
     fairness.logger.info(f"Demographic parity is {parity:.4f}")
-    return parity < epsilon
+    return parity < epsilon if numeric else parity
 
 
 def is_disparate_impact(

@@ -6,7 +6,8 @@ from dataset import PATH as DATASET_PATH
 DEFAULT_SEED = 0
 DEFAULT_TEST_SIZE = 0.2
 DEFAULT_VALIDATION_SIZE = 0.2
-DEFAULT_ADULT_DATASET_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"  # https://archive.ics.uci.edu/static/public/2/adult.zip
+DEFAULT_ADULT_TRAIN_SET_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"  # https://archive.ics.uci.edu/static/public/2/adult.zip
+DEFAULT_ADULT_TEST_SET_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"
 
 
 def _create_cache_directory():
@@ -24,17 +25,21 @@ class AdultLoader:
             df: pd.DataFrame,
             validation_size: float = DEFAULT_VALIDATION_SIZE,
             test_size: float = DEFAULT_TEST_SIZE,
-        ) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+            validation: bool = True
+        ) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
             train_df, test_df = train_test_split(
                 df, test_size=test_size, stratify=df["income"], random_state=self.seed
             )
-            train_df, val_df = train_test_split(
-                train_df,
-                test_size=validation_size,
-                stratify=train_df["income"],
-                random_state=self.seed,
-            )
-            return train_df, val_df, test_df
+            if not validation:
+                return train_df, test_df
+            else:
+                train_df, val_df = train_test_split(
+                    train_df,
+                    test_size=validation_size,
+                    stratify=train_df["income"],
+                    random_state=self.seed,
+                )
+                return train_df, val_df, test_df
 
         def setup(self, df: pd.DataFrame) -> pd.DataFrame:
             df.income = df.income.apply(
@@ -85,24 +90,37 @@ class AdultLoader:
     ]
     processor = AdultProcessor()
 
-    def __init__(self, path: str = DEFAULT_ADULT_DATASET_URL):
+    def __init__(self, path: str = DEFAULT_ADULT_TRAIN_SET_URL):
         self.path = path
 
-    def load(self):
+    def load(self, url: str = None, skiprows: int = 0) -> pd.DataFrame:
+        if url is None:
+            url = self.path
         _create_cache_directory()
-        cache_file = DATASET_PATH / "cache" / self.filename
+        cache_file = DATASET_PATH / "cache" / (url.split("/")[-1] + ".csv")
         if cache_file.exists():
             return pd.read_csv(cache_file)
         else:
-            df = pd.read_csv(self.path, skipinitialspace=True)
+            df = pd.read_csv(url, skipinitialspace=True, skiprows=skiprows)
             df.columns = self.columns
             df.to_csv(cache_file, index=False)
             return df
 
-    def load_preprocessed(self) -> pd.DataFrame:
-        df = self.load()
+    def load_all(self) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        df_train = self.load()
+        df_test = self.load(DEFAULT_ADULT_TEST_SET_URL, skiprows=1)
+        return pd.concat([df_train, df_test], axis=0)
+
+    def load_preprocessed(self, all_datasets: bool = False) -> pd.DataFrame:
+        if all_datasets:
+            df = self.load_all()
+        else:
+            df = self.load()
         return self.processor.setup(df)
 
-    def load_preprocessed_split(self) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        df = self.load_preprocessed()
-        return self.processor.split(df)
+    def load_preprocessed_split(self, validation: bool = True, all_datasets: bool = False) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
+        if all_datasets:
+            df = self.load_preprocessed(all_datasets=True)
+        else:
+            df = self.load_preprocessed()
+        return self.processor.split(df, validation=validation)
