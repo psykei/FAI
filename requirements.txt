@@ -2,3 +2,4 @@ scikit-learn~=1.2.2
 pandas~=2.0.2
 numpy~=1.25.0
 tensorflow~=2.11.1
+tqdm~=4.65.0
