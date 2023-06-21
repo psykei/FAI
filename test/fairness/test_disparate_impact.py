@@ -25,11 +25,11 @@ class TestDisparateImpact(unittest.TestCase):
         self.adult_train_p = adult_train_dataset[self.protected_attribute].values
         self.adult_train_y = adult_train_dataset.iloc[:, -1].values
 
-    def test_unfair_model(self):
-        self.assertTrue(is_disparate_impact(self.adult_train_p, self.adult_train_y))
+    def test_model(self):
+        self.assertFalse(is_disparate_impact(self.adult_train_p, self.adult_train_y))
 
-    def test_unfair_model_with_low_threshold(self):
-        self.assertFalse(
+    def test_model_with_low_threshold(self):
+        self.assertTrue(
             is_disparate_impact(
                 self.adult_train_p, self.adult_train_y, threshold=self.low_threshold
             )
