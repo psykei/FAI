@@ -50,6 +50,10 @@ class AdultLoader:
                 if x in ["Male", " Male", "Male ", " Male ", " Male."]
                 else 1
             )
+            # Boolean to float
+            df = df.astype(float)
+            output = df.pop("income")
+            df["income"] = output
             return df
 
     filename = "adult.csv"
