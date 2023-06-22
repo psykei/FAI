@@ -14,16 +14,17 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON, numeric: bo
     :param p: protected feature
     :param y: output
     :param epsilon: threshold for demographic parity
+    :param numeric: if True, return the value of demographic parity instead of a boolean
     :return: True if demographic parity is less than epsilon, False otherwise
     """
     assert len(np.unique(p)) <= 2, "Demographic parity is only defined for binary protected features"
     parity = np.abs(np.mean(y[p == 0]) - np.mean(y)) + np.abs(np.mean(y[p == 1]) - np.mean(y))
     fairness.logger.info(f"Demographic parity is {parity:.4f}")
-    return parity < epsilon if numeric else parity
+    return parity < epsilon if not numeric else parity
 
 
 def is_disparate_impact(
-        p: np.array, y: np.array, threshold: float = DISPARATE_IMPACT_THRESHOLD
+        p: np.array, y: np.array, threshold: float = DISPARATE_IMPACT_THRESHOLD, numeric: bool = False
 ) -> bool:
     """
     Disparate impact is a measure of fairness that measures if a protected feature impacts the outcome of a prediction.
@@ -35,6 +36,7 @@ def is_disparate_impact(
     :param p: protected feature
     :param y: output
     :param threshold: threshold for disparate impact
+    :param numeric: if True, return the value of disparate impact instead of a boolean
     :return: True if disparate impact is less than threshold, False otherwise
     """
     protected_feature_values = np.unique(p)
@@ -45,11 +47,11 @@ def is_disparate_impact(
     assert first_impact > 0, "Cannot divide by zero"
     impact = np.min([first_impact, 1 / first_impact])
     fairness.logger.info(f"Disparate impact is {impact:.4f}")
-    return impact > threshold
+    return impact > threshold if not numeric else impact
 
 
 def is_equalized_odds(
-        p: np.array, y_true: np.array, y_pred: np.array, epsilon: float = EPSILON
+        p: np.array, y_true: np.array, y_pred: np.array, epsilon: float = EPSILON, numeric: bool = False
 ) -> bool:
     """
     Equalized odds is a measure of fairness that measures if the output is independent of the protected feature given
@@ -60,6 +62,7 @@ def is_equalized_odds(
     :param y_true: ground truth
     :param y_pred: prediction
     :param epsilon: threshold for equalized odds
+    :param numeric: if True, return the value of equalized odds instead of a boolean
     :return: True if equalized odds is satisfied, False otherwise
     """
     conditional_prob_zero = np.mean(y_pred[y_true == 0])
@@ -74,4 +77,4 @@ def is_equalized_odds(
         double_conditional_prob_one_one - conditional_prob_one
     )
     fairness.logger.info(f"Equalized odds is {equalized_odds:.4f}")
-    return equalized_odds < epsilon
+    return equalized_odds < epsilon if not numeric else equalized_odds
