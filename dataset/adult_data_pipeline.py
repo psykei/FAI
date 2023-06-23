@@ -101,7 +101,7 @@ class AdultLoader:
         if cache_file.exists():
             return pd.read_csv(cache_file)
         else:
-            df = pd.read_csv(url, skipinitialspace=True, skiprows=skiprows)
+            df = pd.read_csv(url, skipinitialspace=True, skiprows=skiprows, header=None)
             df.columns = self.columns
             df.to_csv(cache_file, index=False)
             return df
