@@ -12,11 +12,18 @@ def demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor) -> tf.Ten
     @param predicted: the predicted labels.
     @return: the demographic impact error.
     """
-    return tf.abs(tf.math.reduce_mean(
-        tf.boolean_mask(predicted, tf.equal(x[:, index], 0))
-    ) - tf.math.reduce_mean(predicted)) + tf.abs(tf.math.reduce_mean(
-        tf.boolean_mask(predicted, tf.equal(x[:, index], 1))
-    ) - tf.math.reduce_mean(predicted))
+    conditional_prob_zero = tf.cond(
+        tf.equal(tf.size(tf.boolean_mask(predicted, tf.equal(x[:, index], 0))), 0),
+        lambda: tf.constant(0.0),
+        lambda: tf.math.reduce_mean(tf.boolean_mask(predicted, tf.equal(x[:, index], 0)))
+    )
+    conditional_prob_one = tf.cond(
+        tf.equal(tf.size(tf.boolean_mask(predicted, tf.equal(x[:, index], 1))), 0),
+        lambda: tf.constant(0.0),
+        lambda: tf.math.reduce_mean(tf.boolean_mask(predicted, tf.equal(x[:, index], 1)))
+    )
+    return tf.abs(tf.math.reduce_mean(conditional_prob_zero) - tf.math.reduce_mean(predicted)) \
+        + tf.abs(tf.math.reduce_mean(conditional_prob_one) - tf.math.reduce_mean(predicted))
 
 
 @tf.function
