@@ -18,8 +18,18 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON, numeric: bo
     :return: True if demographic parity is less than epsilon, False otherwise
     """
     assert len(np.unique(p)) <= 2, "Demographic parity is only defined for binary protected features"
-    parity = np.abs(np.mean(y[p == 0]) - np.mean(y)) + np.abs(np.mean(y[p == 1]) - np.mean(y))
-    fairness.logger.info(f"Demographic parity is {parity:.4f}")
+    conditional_prob_zero = y[p == 0]
+    if conditional_prob_zero.shape[0] == 0:
+        conditional_prob_zero = 0
+    else:
+        conditional_prob_zero = np.mean(y[p == 0])
+    conditional_prob_one = y[p == 1]
+    if conditional_prob_one.shape[0] == 0:
+        conditional_prob_one = 0
+    else:
+        conditional_prob_one = np.mean(y[p == 1])
+    parity = np.abs(conditional_prob_zero - np.mean(y)) + np.abs(conditional_prob_one - np.mean(y))
+    fairness.logger.info(f"Demographic parity: {parity:.4f}")
     return parity < epsilon if not numeric else parity
 
 
@@ -46,7 +56,7 @@ def is_disparate_impact(
     first_impact = np.mean(y[p == 0]) / np.mean(y[p == 1])
     assert first_impact > 0, "Cannot divide by zero"
     impact = np.min([first_impact, 1 / first_impact])
-    fairness.logger.info(f"Disparate impact is {impact:.4f}")
+    fairness.logger.info(f"Disparate impact: {impact:.4f}")
     return impact > threshold if not numeric else impact
 
 
@@ -76,5 +86,5 @@ def is_equalized_odds(
     ) + np.abs(double_conditional_prob_one_zero - conditional_prob_one) + np.abs(
         double_conditional_prob_one_one - conditional_prob_one
     )
-    fairness.logger.info(f"Equalized odds is {equalized_odds:.4f}")
+    fairness.logger.info(f"Equalized odds: {equalized_odds:.4f}")
     return equalized_odds < epsilon if not numeric else equalized_odds
