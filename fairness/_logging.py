@@ -3,6 +3,9 @@ import logging
 __all__ = [
     "logger",
     "enable_logging",
+    "disable_logging",
+    "enable_file_logging",
+    "disable_file_logging",
     "LOG_DEBUG",
     "LOG_INFO",
     "LOG_WARNING",
@@ -44,3 +47,24 @@ def disable_logging():
     """
     logger.setLevel(logging.CRITICAL)
     logger.handlers = []
+
+
+def enable_file_logging(filename: str, level: int = LOG_INFO):
+    """
+    Enable logging to a file.
+    @param filename: the filename.
+    @param level: the logging level.
+    """
+    enable_logging(level)
+    fh = logging.FileHandler(filename)
+    fh.setLevel(level)
+    logger.addHandler(fh)
+
+
+def disable_file_logging():
+    """
+    Disable logging to a file.
+    """
+    logger.setLevel(logging.CRITICAL)
+    if len(logger.handlers) > 1:
+        logger.removeHandler(logger.handlers[1])
