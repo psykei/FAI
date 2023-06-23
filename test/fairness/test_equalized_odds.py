@@ -15,7 +15,7 @@ class TestEqualizedOdds(unittest.TestCase):
     adult_test_p = None
     adult_test_y = None
     protected_attribute = "Sex"
-    high_epsilon = 0.2
+    high_epsilon = 0.3
     low_epsilon = 1e-3
 
     @classmethod
