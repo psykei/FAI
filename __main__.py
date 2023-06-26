@@ -8,7 +8,7 @@ from tqdm.keras import TqdmCallback
 from dataset.adult_data_pipeline import AdultLoader
 from fairness import enable_logging, enable_file_logging, logger
 from fairness.metric import is_demographic_parity, is_disparate_impact, is_equalized_odds
-from fairness.tf_metric import demographic_parity, disparate_impact
+from fairness.tf_metric import demographic_parity, disparate_impact, equalized_odds
 from utils import create_fully_connected_nn
 import numpy as np
 from fairness import PATH as FAIRNESS_PATH
@@ -20,7 +20,11 @@ BATCH_SIZE = 500
 NEURONS_PER_LAYER = [100, 50]
 VERBOSE = 0
 IDX = 3
-CUSTOM_METRIC = None  # "demographic_parity"
+# CUSTOM_METRIC = None
+# CUSTOM_METRIC = "demographic_parity"
+CUSTOM_METRIC = "disparate_impact"
+# CUSTOM_METRIC = "equalized_odds"
+
 LOG = "log"
 
 disable_eager_execution()
@@ -54,7 +58,7 @@ if not os.path.exists(filename):
         elif CUSTOM_METRIC == "disparate_impact":
             custom_loss = lambda y_true, y_pred: binary_crossentropy(y_true, y_pred) + disparate_impact(IDX, x, y_pred)
         elif CUSTOM_METRIC == "equalized_odds":
-            custom_loss = lambda y_true, y_pred: binary_crossentropy(y_true, y_pred) + is_equalized_odds(IDX, x, y_pred)
+            custom_loss = lambda y_true, y_pred: binary_crossentropy(y_true, y_pred) + equalized_odds(IDX, x, y_true, y_pred)
         else:
             custom_loss = lambda y_true, y_pred: binary_crossentropy(y_true, y_pred)
         model.compile(optimizer="adam", loss=custom_loss, metrics=["accuracy"])
