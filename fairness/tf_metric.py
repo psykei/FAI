@@ -6,7 +6,7 @@ INFINITY: float = 1e9
 
 
 @tf.function
-def demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = 0.0) -> tf.Tensor:
+def demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON) -> tf.Tensor:
     """
     Calculate the demographic parity of a model.
     The protected attribute is must be binary.
@@ -78,7 +78,7 @@ def disparate_impact(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: 
 
 
 @tf.function
-def equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted: tf.Tensor, threshold: float = 0.0) -> tf.Tensor:
+def equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON) -> tf.Tensor:
     """
     Calculate the equalized odds of a model.
     The protected attribute is must be binary.
@@ -126,10 +126,12 @@ def equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted: tf.Tensor,
         lambda: tf.constant(0.0),
         lambda: tf.math.reduce_mean(mask)
     )
-    result = tf.abs(double_conditional_prob_zero_zero - conditional_prob_zero) + tf.abs(
-        double_conditional_prob_zero_one - conditional_prob_zero) + tf.abs(
-        double_conditional_prob_one_zero - conditional_prob_one) + tf.abs(
-        double_conditional_prob_one_one - conditional_prob_one)
+    result = tf.reduce_sum([
+        tf.abs(double_conditional_prob_zero_zero - conditional_prob_zero),
+        tf.abs(double_conditional_prob_zero_one - conditional_prob_zero),
+        tf.abs(double_conditional_prob_one_zero - conditional_prob_one),
+        tf.abs(double_conditional_prob_one_one - conditional_prob_one)
+    ])
     return tf.cond(
         tf.less(result, threshold),
         lambda: tf.constant(0.0),
