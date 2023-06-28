@@ -46,7 +46,7 @@ class TestEqualizedOdds(unittest.TestCase):
     def test_perfect_model(self):
         self.assertTrue(
             is_equalized_odds(
-                self.adult_train_p, self.adult_train_y, self.adult_train_y
+                self.adult_train_p, self.adult_train_y, self.adult_train_y, numeric=False
             )
         )
 
@@ -56,7 +56,7 @@ class TestEqualizedOdds(unittest.TestCase):
         )
         self.assertFalse(
             is_equalized_odds(
-                self.adult_test_p, self.adult_test_y, adult_prediction, self.low_epsilon
+                self.adult_test_p, self.adult_test_y, adult_prediction, self.low_epsilon, numeric=False
             )
         )
 
@@ -70,6 +70,7 @@ class TestEqualizedOdds(unittest.TestCase):
                 self.adult_test_y,
                 adult_prediction,
                 epsilon=self.high_epsilon,
+                numeric=False
             )
         )
 

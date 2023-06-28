@@ -26,12 +26,12 @@ class TestDisparateImpact(unittest.TestCase):
         self.adult_train_y = adult_train_dataset.iloc[:, -1].values
 
     def test_model(self):
-        self.assertFalse(is_disparate_impact(self.adult_train_p, self.adult_train_y))
+        self.assertFalse(is_disparate_impact(self.adult_train_p, self.adult_train_y, numeric=False))
 
     def test_model_with_low_threshold(self):
         self.assertTrue(
             is_disparate_impact(
-                self.adult_train_p, self.adult_train_y, threshold=self.low_threshold
+                self.adult_train_p, self.adult_train_y, threshold=self.low_threshold, numeric=False
             )
         )
 

@@ -5,7 +5,7 @@ EPSILON: float = 1e-2
 DISPARATE_IMPACT_THRESHOLD: float = 0.8
 
 
-def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON, numeric: bool = False) -> bool or float:
+def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON, numeric: bool = True) -> bool or float:
     """
     Demographic parity is a measure of fairness that measures if a value of a protected feature impacts the outcome of a
     prediction. In other words, it measures if the outcome is independent of the protected feature.
@@ -34,7 +34,7 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON, numeric: bo
 
 
 def is_disparate_impact(
-        p: np.array, y: np.array, threshold: float = DISPARATE_IMPACT_THRESHOLD, numeric: bool = False
+        p: np.array, y: np.array, threshold: float = DISPARATE_IMPACT_THRESHOLD, numeric: bool = True
 ) -> bool:
     """
     Disparate impact is a measure of fairness that measures if a protected feature impacts the outcome of a prediction.
@@ -61,7 +61,7 @@ def is_disparate_impact(
 
 
 def is_equalized_odds(
-        p: np.array, y_true: np.array, y_pred: np.array, epsilon: float = EPSILON, numeric: bool = False
+        p: np.array, y_true: np.array, y_pred: np.array, epsilon: float = EPSILON, numeric: bool = True
 ) -> bool:
     """
     Equalized odds is a measure of fairness that measures if the output is independent of the protected feature given
@@ -81,10 +81,11 @@ def is_equalized_odds(
     double_conditional_prob_zero_one = np.mean(y_pred[(p == 1) & (y_true == 0)])
     double_conditional_prob_one_zero = np.mean(y_pred[(p == 0) & (y_true == 1)])
     double_conditional_prob_one_one = np.mean(y_pred[(p == 1) & (y_true == 1)])
-    equalized_odds = np.abs(double_conditional_prob_zero_zero - conditional_prob_zero) + np.abs(
-        double_conditional_prob_zero_one - conditional_prob_zero
-    ) + np.abs(double_conditional_prob_one_zero - conditional_prob_one) + np.abs(
-        double_conditional_prob_one_one - conditional_prob_one
-    )
+    equalized_odds = np.sum([
+        np.abs(double_conditional_prob_zero_zero - conditional_prob_zero),
+        np.abs(double_conditional_prob_zero_one - conditional_prob_zero),
+        np.abs(double_conditional_prob_one_zero - conditional_prob_one),
+        np.abs(double_conditional_prob_one_one - conditional_prob_one)
+    ])
     fairness.logger.info(f"Equalized odds: {equalized_odds:.4f}")
     return equalized_odds < epsilon if not numeric else equalized_odds
