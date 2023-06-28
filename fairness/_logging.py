@@ -31,6 +31,7 @@ def enable_logging(level: int = LOG_INFO):
     Enable logging.
     @param level: the logging level.
     """
+    disable_logging()
     logger.setLevel(level)
     ch = logging.StreamHandler()
     ch.setLevel(level)
@@ -55,8 +56,7 @@ def enable_file_logging(filename: str, level: int = LOG_INFO):
     @param filename: the filename.
     @param level: the logging level.
     """
-    if len(logger.handlers) == 0:
-        enable_logging(level)
+    enable_logging(level)
     fh = logging.FileHandler(filename)
     fh.setLevel(level)
     logger.addHandler(fh)
