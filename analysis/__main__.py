@@ -5,7 +5,7 @@ from analysis import get_files_from_parameters, get_final_metrics_from_file, PAT
 CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 
 for CUSTOM_METRIC in CUSTOM_METRICS:
-    accs, dps, dis, eos, lambdas = [], [], [], [], []
+    accs, dps, dis, eos, lambdas, file_names = [], [], [], [], [], []
     for LAMBDA in [(10 - i) / 10 for i in range(0, 10)]:
         if LAMBDA == 1.0:
             LAMBDA = 1
@@ -17,6 +17,7 @@ for CUSTOM_METRIC in CUSTOM_METRICS:
             dis.append(di)
             eos.append(eo)
             lambdas.append(LAMBDA)
-    df = pd.DataFrame({"lambda": lambdas, "acc": accs, "dp": dps, "di": dis, "eo": eos})
+            file_names.append(file.name)
+    df = pd.DataFrame({"file name": file_names, "lambda": lambdas, "acc": accs, "dp": dps, "di": dis, "eo": eos})
     df.to_csv(ANALYSIS_PATH / f"{CUSTOM_METRIC}.csv", index=False)
 
