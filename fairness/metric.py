@@ -5,11 +5,24 @@ EPSILON: float = 1e-2
 DISPARATE_IMPACT_THRESHOLD: float = 0.8
 
 
+def single_conditional_probability(predicted: np.array, protected: np.array, value: int) -> float:
+    """
+    Calculate the estimated conditioned output distribution of a model.
+    The protected attribute can be binary or categorical.
+    :param predicted: the predicted labels.
+    :param protected: the protected attribute.
+    :param value: the value of the protected attribute.
+    :return: the conditional probability.
+    """
+    mask = predicted[protected == value]
+    return mask.mean()
+
+
 def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON, numeric: bool = True) -> bool or float:
     """
     Demographic parity is a measure of fairness that measures if a value of a protected feature impacts the outcome of a
     prediction. In other words, it measures if the outcome is independent of the protected feature.
-    The protected feature must be binary.
+    The protected feature must be binary or categorical.
     The output must be binary.
     :param p: protected feature
     :param y: output
@@ -17,18 +30,14 @@ def is_demographic_parity(p: np.array, y: np.array, epsilon=EPSILON, numeric: bo
     :param numeric: if True, return the value of demographic parity instead of a boolean
     :return: True if demographic parity is less than epsilon, False otherwise
     """
-    assert len(np.unique(p)) <= 2, "Demographic parity is only defined for binary protected features"
-    conditional_prob_zero = y[p == 0]
-    if conditional_prob_zero.shape[0] == 0:
-        conditional_prob_zero = 0
-    else:
-        conditional_prob_zero = np.mean(y[p == 0])
-    conditional_prob_one = y[p == 1]
-    if conditional_prob_one.shape[0] == 0:
-        conditional_prob_one = 0
-    else:
-        conditional_prob_one = np.mean(y[p == 1])
-    parity = np.abs(conditional_prob_zero - np.mean(y)) + np.abs(conditional_prob_one - np.mean(y))
+    unique_p = np.unique(p)
+    absolute_probability = np.mean(y)
+    parity = 0
+    for p_value in unique_p:
+        conditional_probability = single_conditional_probability(y, p, p_value)
+        if conditional_probability == 0:
+            continue
+        parity += np.abs(conditional_probability - absolute_probability)
     fairness.logger.info(f"Demographic parity: {parity:.4f}")
     return parity < epsilon if not numeric else parity
 

@@ -25,7 +25,7 @@ NEURONS_PER_LAYER = [100, 50]
 VERBOSE = 0
 IDX = 3
 CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
-LAMBDAS = [(10-i)/10 for i in range(0, 10)]
+LAMBDAS = [1] # [(10-i)/10 for i in range(0, 10)]
 disable_v2_behavior()
 disable_eager_execution()
 
@@ -40,6 +40,8 @@ for CUSTOM_METRIC in CUSTOM_METRICS:
             id += "_" + str(LAMBDA)
         filename = str(FAIRNESS_PATH) + os.sep + LOG + os.sep + hashlib.md5(str(id).encode()).hexdigest() + ".txt"
         if not os.path.exists(filename):
+            enable_logging()
+            logger.info(f"Logging to {filename}")
             enable_file_logging(filename)
             logger.info(
                 f"Parameters:"
