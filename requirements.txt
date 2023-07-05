@@ -4,3 +4,4 @@ numpy~=1.25.0
 tensorflow~=2.11.1
 tqdm~=4.65.0
 matplotlib~=3.7.1
+torch~=2.0.1
