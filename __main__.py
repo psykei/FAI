@@ -33,7 +33,7 @@ STEPS = 0.1
 LAMBDAS = [((MAX_LAMBDA * (1 / STEPS)) - i)/(1/STEPS) for i in range(0, int(MAX_LAMBDA * (1 / STEPS)))]
 ONE_HOT = False
 # LAMBDAS = [1]
-TARGET_ACCURACY = 0.85
+TARGET_ACCURACY = 0.9
 TARGET_FAIRNESS_METRIC = 0.01
 TARGET_DISPARATE_IMPACT = 0.99
 disable_v2_behavior()
@@ -41,8 +41,8 @@ disable_eager_execution()
 
 
 def cost_combiner(first_cost: tf.Tensor, second_cost: tf.Tensor) -> tf.Tensor:
-    return tf.minimum(first_cost + second_cost, tf.constant(2, dtype=tf.float32) * first_cost)
-    # return first_cost #+ second_cost
+    # return tf.minimum(first_cost + second_cost, tf.constant(2, dtype=tf.float32) * first_cost)
+    return first_cost + second_cost
 
 
 def compute_experiments_given_fairness_metric(metric: str = None):
