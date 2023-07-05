@@ -2,6 +2,7 @@
 dataset/cache
 fairness/log/
 analysis/*.csv
+images/*.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

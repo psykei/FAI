@@ -6,7 +6,7 @@ from fairness import PATH as FAIRNESS_PATH
 PATH = Path(__file__).parents[0]
 LOG = "log"
 LOG_PATH = FAIRNESS_PATH / LOG
-COMPLETE_ROW_NUM = 44
+COMPLETE_ROW_NUM = 45
 SEED_ROW = 1
 K_ROW = 2
 EPOCHS_ROW = 3
@@ -72,7 +72,7 @@ def is_lambda_equal(file: Path, l: float) -> bool:
 def is_complete(file: Path) -> bool:
     with open(file, "r") as f:
         lines = f.readlines()
-        return len(lines) == COMPLETE_ROW_NUM
+        return len(lines) >= COMPLETE_ROW_NUM
 
 
 def get_files_from_parameters(custom_metric: str = "None", l: float = 1, batch_size: int = 500, epochs: int = 5000,

@@ -19,12 +19,12 @@ class Conditions(Callback):
 
     def __init__(self,
                  patience: int = 100,
-                 target_accuracy: float = 0.83,
-                 fairness_metric_name: str = "demographic_parity",
+                 target_accuracy: float = 0.85,
+                 fairness_metric_name: str = None,
                  target_fairness_metric: float = 0.01):
         super().__init__()
         self.patience = patience
-        self.long_patience = patience * 5
+        self.long_patience = patience * 2
         self.target_accuracy = target_accuracy
         self.fairness_metric_name = fairness_metric_name
         self.target_fairness_metric = target_fairness_metric
@@ -32,7 +32,6 @@ class Conditions(Callback):
         self.best_accuracy = 0
         self.best_fairness_metric = 0 if fairness_metric_name == "disparate_impact" else 1000
         self.wait = 0
-        self.long_wait = 0
         self.stopped_epoch = 0
 
     def on_train_begin(self, logs=None):
@@ -40,7 +39,6 @@ class Conditions(Callback):
         self.best_accuracy = 0
         self.best_fairness_metric = 0 if self.fairness_metric_name == "disparate_impact" else 1000
         self.wait = 0
-        self.long_wait = 0
         self.stopped_epoch = 0
 
     def on_epoch_end(self, epoch, logs=None):
@@ -50,41 +48,42 @@ class Conditions(Callback):
             self.model.stop_training = True
             logger.info(f"Early stopping at epoch {epoch + 1} because of condition {condition}")
 
-        accuracy = logs.get('acc')
-        fairness_metric = logs.get(self.fairness_metric_name)
-        if self.fairness_metric_name == "disparate_impact":
-            fairness_metric = 1 - fairness_metric
-            best_metric_condition = fairness_metric > self.best_fairness_metric
-            target_metric_condition = fairness_metric >= self.target_fairness_metric
+        accuracy = logs.get('val_acc')
+        target_metric_condition = True
+        best_metric_condition = True
+        fairness_metric = 0
+        if self.fairness_metric_name is not None:
+            fairness_metric = logs.get("val_" + self.fairness_metric_name)
+            if self.fairness_metric_name == "disparate_impact":
+                fairness_metric = 1 - fairness_metric
+                best_metric_condition = fairness_metric > self.best_fairness_metric
+                target_metric_condition = fairness_metric >= self.target_fairness_metric
 
-        else:
-            best_metric_condition = self.best_fairness_metric > fairness_metric
-            target_metric_condition = self.target_fairness_metric >= fairness_metric
+            else:
+                best_metric_condition = self.best_fairness_metric > fairness_metric
+                target_metric_condition = self.target_fairness_metric >= fairness_metric
 
-        # Update all if accuracy improves
-        if accuracy > self.best_accuracy:
+        # Update if both accuracy and fairness metric improve
+        if accuracy > self.best_accuracy and best_metric_condition:
             self.best_weights = self.model.get_weights()
             self.best_accuracy = max(self.best_accuracy, accuracy)
-            if self.fairness_metric_name == "disparate_impact":
-                self.best_fairness_metric = max(self.best_fairness_metric, fairness_metric)
-            else:
-                self.best_fairness_metric = min(self.best_fairness_metric, fairness_metric)
+            if self.fairness_metric_name is not None:
+                if self.fairness_metric_name == "disparate_impact":
+                    self.best_fairness_metric = max(self.best_fairness_metric, fairness_metric)
+                else:
+                    self.best_fairness_metric = min(self.best_fairness_metric, fairness_metric)
             self.wait = 0
-            self.long_wait = 0
 
         # First condition: accuracy and fairness metric are above the targets
         if accuracy >= self.target_accuracy and target_metric_condition:
             end(1)
-        # # Second condition: accuracy is above the target but fairness metric is not improving anymore
-        # elif accuracy > self.target_accuracy and not best_metric_condition:
-        #     self.wait += 1
-        #     if self.wait >= self.patience:
-        #         end(2)
-        # Second condition: accuracy and fairness metric does not improve anymore
-        elif accuracy < self.best_accuracy and not best_metric_condition:
-            self.long_wait += 1
-            if self.wait >= self.long_patience:
+        # Second condition: no improvement for n epochs
+        else:
+            self.wait += 1
+            if self.wait >= self.patience:
                 end(2)
+
+        # print(f"Epoch {epoch+1}: val accuracy = {accuracy}, val fairness metric = {fairness_metric}, best val accuracy = {self.best_accuracy}, best val fairness metric = {self.best_fairness_metric}, wait = {self.wait}")
 
         if epoch+1 == self.params['epochs']:
             end()

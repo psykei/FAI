@@ -1,6 +1,7 @@
 from __future__ import annotations
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from dataset import PATH as DATASET_PATH
 
 DEFAULT_SEED = 0
@@ -41,15 +42,19 @@ class AdultLoader:
                 )
                 return train_df, val_df, test_df
 
-        def setup(self, df: pd.DataFrame) -> pd.DataFrame:
+        def setup(self, df: pd.DataFrame, one_hot: bool = True) -> pd.DataFrame:
             df.income = df.income.apply(
                 lambda x: 0 if x.replace(" ", "") in ("<=50K", "<=50K.") else 1
             )
             for column in AdultLoader.duplicate:
                 df.drop([column], axis=1, inplace=True)
-            for column in AdultLoader.categorical:
-                df = pd.concat([df, pd.get_dummies(df[column], prefix=column)], axis=1)
-                df.drop([column], axis=1, inplace=True)
+            if one_hot:
+                for column in AdultLoader.categorical:
+                    df = pd.concat([df, pd.get_dummies(df[column], prefix=column)], axis=1)
+                    df.drop([column], axis=1, inplace=True)
+            else:
+                for column in AdultLoader.categorical:
+                    df[column] = df[column].astype("category").cat.codes
             df["Sex"] = df["Sex"].apply(
                 lambda x: 0
                 if x in ["Male", " Male", "Male ", " Male ", " Male."]
@@ -58,6 +63,9 @@ class AdultLoader:
             # Boolean to float
             df = df.astype(float)
             output = df.pop("income")
+            if not one_hot:
+                scaler = StandardScaler()
+                df = pd.DataFrame(scaler.fit_transform(df))
             df["income"] = output
             return df
 
@@ -109,18 +117,20 @@ class AdultLoader:
     def load_all(self) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         df_train = self.load()
         df_test = self.load(DEFAULT_ADULT_TEST_SET_URL, skiprows=1)
-        return pd.concat([df_train, df_test], axis=0)
+        df_test.index = range(len(df_train), len(df_train) + len(df_test))
+        result = pd.concat([df_train, df_test], axis=0)
+        return result
 
-    def load_preprocessed(self, all_datasets: bool = False) -> pd.DataFrame:
+    def load_preprocessed(self, all_datasets: bool = False, one_hot: bool = True) -> pd.DataFrame:
         if all_datasets:
             df = self.load_all()
         else:
             df = self.load()
-        return self.processor.setup(df)
+        return self.processor.setup(df, one_hot=one_hot)
 
-    def load_preprocessed_split(self, validation: bool = True, all_datasets: bool = False) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
+    def load_preprocessed_split(self, validation: bool = True, all_datasets: bool = False, one_hot: bool = True) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
         if all_datasets:
-            df = self.load_preprocessed(all_datasets=True)
+            df = self.load_preprocessed(all_datasets=True, one_hot=one_hot)
         else:
-            df = self.load_preprocessed()
+            df = self.load_preprocessed(one_hot=one_hot)
         return self.processor.split(df, validation=validation)
