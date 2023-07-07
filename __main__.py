@@ -1,7 +1,7 @@
 import hashlib
 import os
 from time import sleep
-
+from configuration import *
 import tensorflow as tf
 from sklearn.model_selection import KFold, train_test_split
 from tensorflow.python.compat.v2_compat import disable_v2_behavior
@@ -19,23 +19,6 @@ import numpy as np
 from fairness import PATH as FAIRNESS_PATH
 
 
-LOG = "log"
-SEED = 0
-K = 5
-EPOCHS = 5000
-BATCH_SIZE = 500
-NEURONS_PER_LAYER = [100, 50]
-VERBOSE = 0
-IDX = 8
-CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
-MAX_LAMBDA = 1
-STEPS = 0.1
-LAMBDAS = [((MAX_LAMBDA * (1 / STEPS)) - i)/(1/STEPS) for i in range(0, int(MAX_LAMBDA * (1 / STEPS)))]
-ONE_HOT = False
-# LAMBDAS = [1]
-TARGET_ACCURACY = 0.9
-TARGET_FAIRNESS_METRIC = 0.01
-TARGET_DISPARATE_IMPACT = 0.99
 disable_v2_behavior()
 disable_eager_execution()
 
@@ -53,26 +36,7 @@ def compute_experiments_given_fairness_metric(metric: str = None):
             idf += "_" + str(ONE_HOT)
         filename = str(FAIRNESS_PATH) + os.sep + LOG + os.sep + hashlib.md5(str(idf).encode()).hexdigest() + ".txt"
         if not os.path.exists(filename):
-            enable_logging()
-            logger.info(f"Logging to {filename}")
-            enable_file_logging(filename)
-            logger.info(
-                f"Parameters:"
-                f"\n\tSEED={SEED}"
-                f"\n\tK={K}"
-                f"\n\tEPOCHS={EPOCHS}"
-                f"\n\tBATCH_SIZE={BATCH_SIZE}"
-                f"\n\tNEURONS_PER_LAYER={NEURONS_PER_LAYER}"
-                f"\n\tIDX={IDX}"
-                f"\n\tCUSTOM_METRIC={metric}"
-                f"\n\tLAMBDA={l}"
-                f"\n\tONE_HOT={ONE_HOT}"
-            )
-
-            loader = AdultLoader()
-            dataset = loader.load_preprocessed(all_datasets=True, one_hot=False)
-            train, test = train_test_split(dataset, test_size=0.2, random_state=SEED, stratify=dataset["income"])
-            kfold = KFold(n_splits=K, shuffle=True, random_state=SEED)
+            dataset, train, test, kfold = initialize_experiment(filename, metric, l)
             l_tf = tf.constant(l, dtype=tf.float32)
 
             mean_loss = 0

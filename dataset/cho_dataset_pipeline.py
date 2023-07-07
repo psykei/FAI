@@ -42,19 +42,27 @@ class FairnessChoDataset:
     def prepare_ndarray(self, idx: int = 0):
 
         def _(x, y) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+            z = x.iloc[:, idx].to_numpy(dtype=np.float64)
             x = x.drop(x.columns[idx], axis=1).to_numpy(dtype=np.float64)
             y = y.to_numpy(dtype=np.float64)
-            z = x.iloc[:, idx].to_numpy(dtype=np.float64)
             xz = np.concatenate([x, z.reshape(-1, 1)], axis=1)
             return x, y, z, xz
 
         self.X_train, self.Y_train, self.Z_train, self.XZ_train = _(self.X_train, self.Y_train)
         self.X_val, self.Y_val, self.Z_val, self.XZ_val = _(self.X_val, self.Y_val)
-        self.X_test = self.X_test.to_numpy(dtype=np.float64)
-        self.Y_test = self.Y_test.to_numpy(dtype=np.float64)
-        self.Z_test = self.Z_test.to_numpy(dtype=np.float64)
-        self.XZ_test = np.concatenate([self.X_test, self.Z_test.reshape(-1,1)], axis=1)
+        self.X_test, self.Y_test, self.Z_test, self.XZ_test = _(self.X_test, self.Y_test)
         self.sensitive_attrs = sorted(list(set(self.Z_train)))
+
+        # Scale
+        scaler_XZ = StandardScaler()
+        self.XZ_train = scaler_XZ.fit_transform(self.XZ_train)
+        self.XZ_val = scaler_XZ.transform(self.XZ_val)
+        self.XZ_test = scaler_XZ.transform(self.XZ_test)
+
+        scaler_X = StandardScaler()
+        self.X_train = scaler_X.fit_transform(self.X_train)
+        self.X_val = scaler_X.transform(self.X_val)
+        self.X_test = scaler_X.transform(self.X_test)
 
     def get_dataset_in_ndarray(self):
         return (self.X_train, self.Y_train, self.Z_train, self.XZ_train), \
