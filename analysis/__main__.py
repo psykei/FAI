@@ -4,7 +4,8 @@ from analysis.our import PATH as OUR_ANALYSIS_PATH
 from analysis.cho import PATH as CHO_ANALYSIS_PATH
 
 
-METRICS = ["demographic_parity"]
+METRICS = ["equalized_odds"]
+# METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 DATA_PATHS = [OUR_ANALYSIS_PATH, CHO_ANALYSIS_PATH]
 
 for METRIC in METRICS:

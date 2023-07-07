@@ -35,7 +35,8 @@ CHO_DELTA = 1.0
 MAX_LAMBDA = 1
 STEPS = 0.01
 CHO_LAMBDAS = [((MAX_LAMBDA * (1 / STEPS)) - i)/(1/STEPS) for i in range(0, int(MAX_LAMBDA * (1 / STEPS)))]
-CHO_METRICS = ["demographic_parity"]  # , "equalized_odds"
+CHO_METRICS = ["equalized_odds"]
+# CHO_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 
 
 def initialize_experiment(filename: str, metric: str, l: float, preprocess: bool = True):
