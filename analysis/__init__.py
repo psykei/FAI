@@ -6,7 +6,7 @@ from fairness import PATH as FAIRNESS_PATH
 PATH = Path(__file__).parents[0]
 LOG = "log"
 LOG_PATH = FAIRNESS_PATH / LOG
-COMPLETE_ROW_NUM = 45
+COMPLETE_ROW_NUM = 40
 SEED_ROW = 1
 K_ROW = 2
 EPOCHS_ROW = 3
@@ -75,11 +75,11 @@ def is_complete(file: Path) -> bool:
         return len(lines) >= COMPLETE_ROW_NUM
 
 
-def get_files_from_parameters(custom_metric: str = "None", l: float = 1, batch_size: int = 500, epochs: int = 5000,
+def get_files_from_parameters(custom_metric: str = "None", path = LOG_PATH, l: float = 1, batch_size: int = 500, epochs: int = 5000,
                               neurons_per_layer=None, seed: int = 0, k: int = 5, idx: int = 3) -> list[Path]:
     if neurons_per_layer is None:
         neurons_per_layer = [100, 50]
-    experiment_log_files = get_list_of_files(LOG_PATH)
+    experiment_log_files = get_list_of_files(path)
     experiment_log_files = [f for f in experiment_log_files if is_seed_equal(f, seed)]
     experiment_log_files = [f for f in experiment_log_files if is_k_equal(f, k)]
     experiment_log_files = [f for f in experiment_log_files if is_epochs_equal(f, epochs)]

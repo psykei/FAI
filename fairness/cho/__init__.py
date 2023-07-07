@@ -1,11 +1,13 @@
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-
 from dataset.cho_dataset_pipeline import CustomDataset
+from utils import PyTorchConditions
 
+PATH = Path(__file__).parents[0]
 TAU = 0.5
 # Approximation of Q-function given by López-Benítez & Casadevall (2011) based on a second-order exponential function & Q(x) = 1- Q(-x):
 A = 0.4920
@@ -46,20 +48,20 @@ def measures_from_y_hat(y, z, y_hat=None, threshold=0.5):
     # Accuracy
     acc = (y_tilde == y).astype(np.float32).mean()
     # DP
-    DDP = abs(np.mean(y_tilde[z == 0]) - np.mean(y_tilde[z == 1]))
+    DDP = abs(np.mean(y_tilde[z <= 0]) - np.mean(y_tilde[z >= 0]))  # z == 0, z == 1
     # EO
-    Y_Z0, Y_Z1 = y[z == 0], y[z == 1]
+    Y_Z0, Y_Z1 = y[z <= 0], y[z >= 0]  # z == 0, z == 1
     Y1_Z0 = Y_Z0[Y_Z0 == 1]
     Y0_Z0 = Y_Z0[Y_Z0 == 0]
     Y1_Z1 = Y_Z1[Y_Z1 == 1]
     Y0_Z1 = Y_Z1[Y_Z1 == 0]
 
     FPR, FNR = {}, {}
-    FPR[0] = np.sum(y_tilde[np.logical_and(z == 0, y == 0)]) / len(Y0_Z0)
-    FPR[1] = np.sum(y_tilde[np.logical_and(z == 1, y == 0)]) / len(Y0_Z1)
+    FPR[0] = np.sum(y_tilde[np.logical_and(z <= 0, y == 0)]) / len(Y0_Z0)  # z == 0
+    FPR[1] = np.sum(y_tilde[np.logical_and(z >= 0, y == 0)]) / len(Y0_Z1)  # z == 1
 
-    FNR[0] = np.sum(1 - y_tilde[np.logical_and(z == 0, y == 1)]) / len(Y1_Z0)
-    FNR[1] = np.sum(1 - y_tilde[np.logical_and(z == 1, y == 1)]) / len(Y1_Z1)
+    FNR[0] = np.sum(1 - y_tilde[np.logical_and(z <= 0, y == 1)]) / len(Y1_Z0)  # z == 0
+    FNR[1] = np.sum(1 - y_tilde[np.logical_and(z >= 0, y == 1)]) / len(Y1_Z1)  # z == 1
 
     TPR_diff = abs((1 - FNR[0]) - (1 - FNR[1]))
     FPR_diff = abs(FPR[0] - FPR[1])
@@ -72,13 +74,15 @@ def measures_from_y_hat(y, z, y_hat=None, threshold=0.5):
 
 def train_fair_classifier(dataset, net, optimizer, lr_scheduler, fairness, lambda_, h, delta, device, n_epochs=5000, batch_size=500, seed=0):
     # Retrieve train/test split pytorch tensors for index=split
-    train_tensors, test_tensors = dataset.get_dataset_in_tensor()
+    train_tensors, valid_tensors, test_tensors = dataset.get_dataset_in_tensor()
     X_train, Y_train, Z_train, XZ_train = train_tensors
+    X_valid, Y_valid, Z_valid, XZ_valid = valid_tensors
     X_test, Y_test, Z_test, XZ_test = test_tensors
 
     # Retrieve train/test split numpy arrays for index=split
-    train_arrays, test_arrays = dataset.get_dataset_in_ndarray()
+    train_arrays, valid_arrays, test_arrays = dataset.get_dataset_in_ndarray()
     X_train_np, Y_train_np, Z_train_np, XZ_train_np = train_arrays
+    X_valid_np, Y_valid_np, Z_valid_np, XZ_valid_np = valid_arrays
     X_test_np, Y_test_np, Z_test_np, XZ_test_np = test_arrays
     sensitive_attrs = dataset.sensitive_attrs
 
@@ -92,77 +96,80 @@ def train_fair_classifier(dataset, net, optimizer, lr_scheduler, fairness, lambd
     pi = torch.tensor(np.pi).to(device)
     phi = lambda x: torch.exp(-0.5 * x ** 2) / torch.sqrt(2 * pi)  # normal distribution
 
-    # An empty dataframe for logging experimental results
-    df = pd.DataFrame()
-    df_ckpt = pd.DataFrame()
-
     loss_function = nn.BCELoss()
     costs = []
+    conditions = PyTorchConditions(fairness_metric_name=fairness, model=net, max_epochs=n_epochs)
+
+    def fairness_cost(y_pred, y_b, z_b):
+        if isinstance(y_pred, torch.Tensor):
+            y_pred_detached = y_pred.detach()
+        else:
+            y_pred = torch.tensor(y_pred).to(device)
+            y_pred_detached = y_pred.detach()
+        # DP_Constraint
+        if fairness == 'demographic_parity':
+            Pr_Ytilde1 = CDF_tau(y_pred_detached, h, TAU)
+            for z in sensitive_attrs:
+                Pr_Ytilde1_Z = CDF_tau(y_pred_detached[z_b == z], h, TAU)
+                m_z = z_b[z_b == z].shape[0]
+
+                Delta_z = Pr_Ytilde1_Z - Pr_Ytilde1
+                Delta_z_grad = torch.dot(phi((TAU - y_pred_detached[z_b == z]) / h).view(-1),
+                                         y_pred[z_b == z].view(-1)) / h / m_z
+                Delta_z_grad -= torch.dot(phi((TAU - y_pred_detached) / h).view(-1),
+                                          y_pred.view(-1)) / h / m
+
+                if Delta_z.abs() >= delta:
+                    if Delta_z > 0:
+                        Delta_z_grad *= lambda_ * delta
+                        return Delta_z_grad
+                    else:
+                        Delta_z_grad *= -lambda_ * delta
+                        return Delta_z_grad
+                else:
+                    Delta_z_grad *= lambda_ * Delta_z
+                    return Delta_z_grad
+
+        # EO_Constraint
+        elif fairness == 'equalized_odds':
+            for y in [0, 1]:
+                Pr_Ytilde1_Y = CDF_tau(y_pred_detached[y_b == y], h, TAU)
+                m_y = y_batch[y_b == y].shape[0]
+                for z in sensitive_attrs:
+                    Pr_Ytilde1_ZY = CDF_tau(y_pred_detached[(y_b == y) & (z_b == z)], h, TAU)
+                    m_zy = z_b[(y_b == y) & (z_b == z)].shape[0]
+                    Delta_zy = Pr_Ytilde1_ZY - Pr_Ytilde1_Y
+                    Delta_zy_grad = torch.dot(
+                        phi((TAU - y_pred_detached[(y_b == y) & (z_b == z)]) / h).view(-1),
+                        y_pred[(y_b == y) & (z_b == z)].view(-1)
+                    ) / h / m_zy
+                    Delta_zy_grad -= torch.dot(
+                        phi((TAU - y_pred_detached[y_b == y]) / h).view(-1),
+                        y_pred[y_b == y].view(-1)
+                    ) / h / m_y
+
+                    if Delta_zy.abs() >= delta:
+                        if Delta_zy > 0:
+                            Delta_zy_grad *= lambda_ * delta
+                            return Delta_zy_grad
+                        else:
+                            Delta_zy_grad *= lambda_ * delta
+                            return -lambda_ * delta * Delta_zy_grad
+                    else:
+                        Delta_zy_grad *= lambda_ * Delta_zy
+                        return Delta_zy_grad
+        return None
+
     for epoch in range(n_epochs):
         for i, (xz_batch, y_batch, z_batch) in enumerate(data_loader):
             xz_batch, y_batch, z_batch = xz_batch.to(device), y_batch.to(device), z_batch.to(device)
             Yhat = net(xz_batch)
-            Ytilde = torch.round(Yhat.detach().reshape(-1))
-            cost = 0
-            dtheta = 0
+            cost = 0.0
             m = z_batch.shape[0]
 
             # prediction loss
             p_loss = loss_function(Yhat.squeeze(), y_batch)
-            cost += (1 - lambda_) * p_loss
-
-            # DP_Constraint
-            if fairness == 'DP':
-                Pr_Ytilde1 = CDF_tau(Yhat.detach(), h, TAU)
-                for z in sensitive_attrs:
-                    Pr_Ytilde1_Z = CDF_tau(Yhat.detach()[z_batch == z], h, TAU)
-                    m_z = z_batch[z_batch == z].shape[0]
-
-                    Delta_z = Pr_Ytilde1_Z - Pr_Ytilde1
-                    Delta_z_grad = torch.dot(phi((TAU - Yhat.detach()[z_batch == z]) / h).view(-1),
-                                             Yhat[z_batch == z].view(-1)) / h / m_z
-                    Delta_z_grad -= torch.dot(phi((TAU - Yhat.detach()) / h).view(-1),
-                                              Yhat.view(-1)) / h / m
-
-                    if Delta_z.abs() >= delta:
-                        if Delta_z > 0:
-                            Delta_z_grad *= lambda_ * delta
-                            cost += Delta_z_grad
-                        else:
-                            Delta_z_grad *= -lambda_ * delta
-                            cost += Delta_z_grad
-                    else:
-                        Delta_z_grad *= lambda_ * Delta_z
-                        cost += Delta_z_grad
-
-            # EO_Constraint
-            elif fairness == 'EO':
-                for y in [0, 1]:
-                    Pr_Ytilde1_Y = CDF_tau(Yhat[y_batch == y].detach(), h, TAU)
-                    m_y = y_batch[y_batch == y].shape[0]
-                    for z in sensitive_attrs:
-                        Pr_Ytilde1_ZY = CDF_tau(Yhat[(y_batch == y) & (z_batch == z)].detach(), h, TAU)
-                        m_zy = z_batch[(y_batch == y) & (z_batch == z)].shape[0]
-                        Delta_zy = Pr_Ytilde1_ZY - Pr_Ytilde1_Y
-                        Delta_zy_grad = torch.dot(
-                            phi((TAU - Yhat[(y_batch == y) & (z_batch == z)].detach()) / h).view(-1),
-                            Yhat[(y_batch == y) & (z_batch == z)].view(-1)
-                        ) / h / m_zy
-                        Delta_zy_grad -= torch.dot(
-                            phi((TAU - Yhat[y_batch == y].detach()) / h).view(-1),
-                            Yhat[y_batch == y].view(-1)
-                        ) / h / m_y
-
-                        if Delta_zy.abs() >= delta:
-                            if Delta_zy > 0:
-                                Delta_zy_grad *= lambda_ * delta
-                                cost += Delta_zy_grad
-                            else:
-                                Delta_zy_grad *= lambda_ * delta
-                                cost += -lambda_ * delta * Delta_zy_grad
-                        else:
-                            Delta_zy_grad *= lambda_ * Delta_zy
-                            cost += Delta_zy_grad
+            cost += (1 - lambda_) * p_loss + fairness_cost(Yhat, y_batch, z_batch)
 
             optimizer.zero_grad()
             if (torch.isnan(cost)).any():
@@ -171,18 +178,44 @@ def train_fair_classifier(dataset, net, optimizer, lr_scheduler, fairness, lambd
             optimizer.step()
             costs.append(cost.item())
 
-            # Print the cost per 10 batches
-            # if (i + 1) % 10 == 0 or (i + 1) == len(data_loader):
-            #     print('Epoch [{}/{}], Batch [{}/{}], Cost: {:.4f}'.format(epoch + 1, n_epochs, i + 1, len(data_loader), cost.item()), end='\r')
-        if lr_scheduler is not None:
-            lr_scheduler.step()
+            if lr_scheduler is not None:
+                lr_scheduler.step()
+
+        y_hat_valid = net(XZ_valid).squeeze().detach().cpu().numpy()
+        accuracy = (y_hat_valid.round() == Y_valid_np).mean()
+        f_cost = fairness_cost(y_hat_valid, Y_valid, Z_valid)
+
+        # Early stopping
+        if conditions.early_stop(epoch=epoch, accuracy=accuracy, fairness_metric=f_cost):
+            break
 
         y_hat_train = net(XZ_train).squeeze().detach().cpu().numpy()
         df_temp = measures_from_y_hat(Y_train_np, Z_train_np, y_hat=y_hat_train, threshold=TAU)
         df_temp['epoch'] = epoch * len(data_loader) + i + 1
-        df_ckpt = pd.concat([df_ckpt, df_temp], ignore_index=True)
 
     y_hat_test = net(XZ_test).squeeze().detach().cpu().numpy()
-    df_test = measures_from_y_hat(Y_test_np, Z_test_np, y_hat=y_hat_test, threshold=TAU)
+    # df_test = measures_from_y_hat(Y_test_np, Z_test_np, y_hat=y_hat_test, threshold=TAU)
+    return y_hat_test
 
-    return df_test
+
+class Classifier(nn.Module):
+    def __init__(self, n_layers, n_inputs, n_hidden_units):
+        super(Classifier, self).__init__()
+        layers = []
+
+        if n_layers == 1:  # Logistic Regression
+            layers.append(nn.Linear(n_inputs, 1))
+            layers.append(nn.Sigmoid())
+        else:
+            layers.append(nn.Linear(n_inputs, n_hidden_units[0]))
+            layers.append(nn.ReLU())
+            for i in range(1, len(n_hidden_units)):
+                layers.append(nn.Linear(n_hidden_units[i - 1], n_hidden_units[i]))
+                layers.append(nn.ReLU())
+            layers.append(nn.Linear(n_hidden_units[-1], 1))
+            layers.append(nn.Sigmoid())
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.layers(x)
+        return x

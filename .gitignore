@@ -1,8 +1,11 @@
 .idea/
 dataset/cache
 fairness/log/
+fairness/cho/log
 analysis/*.csv
+analysis/*/*.csv
 images/*.pdf
+images/*/*.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
