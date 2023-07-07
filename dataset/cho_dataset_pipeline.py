@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import torch
+from sklearn.preprocessing import StandardScaler
 
 
 def arrays_to_tensor(X, Y, Z, XZ, device):

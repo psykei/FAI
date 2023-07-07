@@ -134,7 +134,7 @@ def train_fair_classifier(dataset, net, optimizer, lr_scheduler, fairness, lambd
         elif fairness == 'equalized_odds':
             for y in [0, 1]:
                 Pr_Ytilde1_Y = CDF_tau(y_pred_detached[y_b == y], h, TAU)
-                m_y = y_batch[y_b == y].shape[0]
+                m_y = y_b[y_b == y].shape[0]
                 for z in sensitive_attrs:
                     Pr_Ytilde1_ZY = CDF_tau(y_pred_detached[(y_b == y) & (z_b == z)], h, TAU)
                     m_zy = z_b[(y_b == y) & (z_b == z)].shape[0]
