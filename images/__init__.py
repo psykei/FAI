@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 from matplotlib import pyplot as plt
 
+from configuration import IDX_TO_NAME
 
 PATH = Path(__file__).parents[0]
 FAIRNESS_METRIC_LONG_NAMES = {
@@ -16,7 +17,7 @@ FAIRNESS_METRIC_SHORT_NAMES = {
 }
 
 
-def plot_fairness_metric(data_file: Path, image_path: Path, fairness_metric: str) -> None:
+def plot_fairness_metric(data_file: Path, image_path: Path, fairness_metric: str, idx: int) -> None:
     """
     Plot fairness metric.
     X-axis is the corresponding fairness metric.
@@ -24,6 +25,7 @@ def plot_fairness_metric(data_file: Path, image_path: Path, fairness_metric: str
     :param data_file:
     :param image_path:
     :param fairness_metric:
+    :param idx:
     """
     data = pd.read_csv(data_file)
     # Exclude experiments with accuracy < 0.5
@@ -37,11 +39,11 @@ def plot_fairness_metric(data_file: Path, image_path: Path, fairness_metric: str
     # add colorbar
     plt.colorbar()
     # save to file
-    plt.savefig(image_path / f"{fairness_metric}.pdf")
+    plt.savefig(image_path / f"{fairness_metric}_{IDX_TO_NAME[idx]}.pdf")
     plt.clf()
 
 
-def plot_fairness_comparison(data_files: list[Path], image_path: Path, fairness_metric: str) -> None:
+def plot_fairness_comparison(data_files: list[Path], image_path: Path, fairness_metric: str, idx: int) -> None:
     """
     Plot fairness metric.
     X-axis is the corresponding fairness metric.
@@ -61,5 +63,5 @@ def plot_fairness_comparison(data_files: list[Path], image_path: Path, fairness_
     plt.xlabel(FAIRNESS_METRIC_LONG_NAMES[FAIRNESS_METRIC_SHORT_NAMES[fairness_metric]])
     plt.ylabel('Accuracy')
     # save to file
-    plt.savefig(image_path / f"{fairness_metric}.pdf")
+    plt.savefig(image_path / f"{fairness_metric}_{IDX_TO_NAME[idx]}.pdf")
     plt.clf()
