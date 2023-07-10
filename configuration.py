@@ -11,15 +11,21 @@ EPOCHS = 5000
 BATCH_SIZE = 500
 NEURONS_PER_LAYER = [100, 50]
 VERBOSE = 0
-IDX = 8  # index of the sensitive attribute [8 = sex, 7 = ethnicity, ...]
-CUSTOM_METRICS = ["equalized_odds"]
+IDX = 0  # index of the sensitive attribute [0 = age, 8 = sex, 7 = ethnicity, ...]
+CUSTOM_METRICS = ["demographic_parity"]
 # CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 ONE_HOT = False
+IDX_TO_NAME = {
+    0: "age",
+    7: "ethnicity",
+    8: "sex",
+}
 
 # Hyperparameters of our method
 MAX_LAMBDA = 1
 STEPS = 0.01
 LAMBDAS = [((MAX_LAMBDA * (1 / STEPS)) - i)/(1/STEPS) for i in range(0, int(MAX_LAMBDA * (1 / STEPS)))]
+LAMBDAS = sorted(LAMBDAS, reverse=False)
 
 # Target fairness metrics and accuracy
 TARGET_ACCURACY = 0.9
@@ -32,11 +38,17 @@ DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 # Cho's method configuration
 CHO_H = 0.1
 CHO_DELTA = 1.0
-MAX_LAMBDA = 1
-STEPS = 0.01
-CHO_LAMBDAS = [((MAX_LAMBDA * (1 / STEPS)) - i)/(1/STEPS) for i in range(0, int(MAX_LAMBDA * (1 / STEPS)))]
-CHO_METRICS = ["equalized_odds"]
+CHO_MAX_LAMBDA = 1
+CHO_STEPS = 0.01
+CHO_LAMBDAS = [((CHO_MAX_LAMBDA * (1 / CHO_STEPS)) - i)/(1/CHO_STEPS) for i in range(0, int(CHO_MAX_LAMBDA * (1 / CHO_STEPS)))]
+CHO_METRICS = ["demographic_parity"]
 # CHO_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
+
+# Jiang's method configuration
+JIANG_MAX_LAMBDA = 1
+JIANG_STEPS = 0.01
+JIANG_LAMBDAS = [((JIANG_MAX_LAMBDA * (1 / JIANG_STEPS)) - i)/(1/JIANG_STEPS) for i in range(0, int(JIANG_MAX_LAMBDA * (1 / JIANG_STEPS)))]
+JIANG_METRICS = ["demographic_parity"]
 
 
 def initialize_experiment(filename: str, metric: str, l: float, preprocess: bool = True):

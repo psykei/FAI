@@ -48,20 +48,20 @@ def measures_from_y_hat(y, z, y_hat=None, threshold=0.5):
     # Accuracy
     acc = (y_tilde == y).astype(np.float32).mean()
     # DP
-    DDP = abs(np.mean(y_tilde[z <= 0]) - np.mean(y_tilde[z >= 0]))  # z == 0, z == 1
+    DDP = abs(np.mean(y_tilde[z == 0]) - np.mean(y_tilde[z == 1]))
     # EO
-    Y_Z0, Y_Z1 = y[z <= 0], y[z >= 0]  # z == 0, z == 1
+    Y_Z0, Y_Z1 = y[z == 0], y[z == 1]
     Y1_Z0 = Y_Z0[Y_Z0 == 1]
     Y0_Z0 = Y_Z0[Y_Z0 == 0]
     Y1_Z1 = Y_Z1[Y_Z1 == 1]
     Y0_Z1 = Y_Z1[Y_Z1 == 0]
 
     FPR, FNR = {}, {}
-    FPR[0] = np.sum(y_tilde[np.logical_and(z <= 0, y == 0)]) / len(Y0_Z0)  # z == 0
-    FPR[1] = np.sum(y_tilde[np.logical_and(z >= 0, y == 0)]) / len(Y0_Z1)  # z == 1
+    FPR[0] = np.sum(y_tilde[np.logical_and(z == 0, y == 0)]) / len(Y0_Z0) if len(Y0_Z0) > 0 else 0
+    FPR[1] = np.sum(y_tilde[np.logical_and(z == 1, y == 0)]) / len(Y0_Z1) if len(Y0_Z1) > 0 else 0
 
-    FNR[0] = np.sum(1 - y_tilde[np.logical_and(z <= 0, y == 1)]) / len(Y1_Z0)  # z == 0
-    FNR[1] = np.sum(1 - y_tilde[np.logical_and(z >= 0, y == 1)]) / len(Y1_Z1)  # z == 1
+    FNR[0] = np.sum(1 - y_tilde[np.logical_and(z == 0, y == 1)]) / len(Y1_Z0) if len(Y1_Z0) > 0 else 0
+    FNR[1] = np.sum(1 - y_tilde[np.logical_and(z == 1, y == 1)]) / len(Y1_Z1) if len(Y1_Z1) > 0 else 0
 
     TPR_diff = abs((1 - FNR[0]) - (1 - FNR[1]))
     FPR_diff = abs(FPR[0] - FPR[1])
@@ -189,9 +189,9 @@ def train_fair_classifier(dataset, net, optimizer, lr_scheduler, fairness, lambd
         if conditions.early_stop(epoch=epoch, accuracy=accuracy, fairness_metric=f_cost):
             break
 
-        y_hat_train = net(XZ_train).squeeze().detach().cpu().numpy()
-        df_temp = measures_from_y_hat(Y_train_np, Z_train_np, y_hat=y_hat_train, threshold=TAU)
-        df_temp['epoch'] = epoch * len(data_loader) + i + 1
+        # y_hat_train = net(XZ_train).squeeze().detach().cpu().numpy()
+        # df_temp = measures_from_y_hat(Y_train_np, Z_train_np, y_hat=y_hat_train, threshold=TAU)
+        # df_temp['epoch'] = epoch * len(data_loader) + i + 1
 
     y_hat_test = net(XZ_test).squeeze().detach().cpu().numpy()
     # df_test = measures_from_y_hat(Y_test_np, Z_test_np, y_hat=y_hat_test, threshold=TAU)

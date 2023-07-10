@@ -2,6 +2,7 @@ import tensorflow as tf
 
 EPSILON: float = 1e-9
 INFINITY: float = 1e9
+DELTA: float = 5e-2  # percentage to apply to the values of the protected attribute to create the buckets
 
 
 def single_conditional_probability(predicted: tf.Tensor, protected: tf.Tensor, value: int, equal: bool = True) -> tf.Tensor:
@@ -15,13 +16,32 @@ def single_conditional_probability(predicted: tf.Tensor, protected: tf.Tensor, v
     @param equal: if True, filter rows whose protected attribute is equal to value, otherwise filter rows whose protected
     attribute is not equal to value.
     @return: the conditional probability.
-    :param equal:
     """
     mask = tf.cond(
         tf.convert_to_tensor(equal),
         lambda: tf.boolean_mask(predicted, tf.equal(protected, value)),
         lambda: tf.boolean_mask(predicted, tf.not_equal(protected, value))
     )
+    return tf.cond(
+        tf.equal(tf.size(mask), 0),
+        lambda: tf.constant(0.0),
+        lambda: tf.math.reduce_mean(mask)
+    )
+
+
+def single_conditional_probability_in_range(predicted: tf.Tensor, protected: tf.Tensor, min_value: float, max_value: float) -> tf.Tensor:
+    """
+    Calculate the estimated conditioned output distribution of a model.
+    The protected attribute can be binary or categorical.
+
+    @param predicted: the predicted labels.
+    @param protected: the protected attribute.
+    @param min_value: the minimum value of the protected attribute.
+    @param max_value: the maximum value of the protected attribute.
+    attribute is not equal to value.
+    @return: the conditional probability.
+    """
+    mask = tf.boolean_mask(predicted, tf.logical_and(tf.greater_equal(protected, min_value), tf.less(protected, max_value)))
     return tf.cond(
         tf.equal(tf.size(mask), 0),
         lambda: tf.constant(0.0),
@@ -42,7 +62,7 @@ def double_conditional_probability(predicted: tf.Tensor, protected: tf.Tensor, g
     @return: the conditional probability.
     :param equal:
     """
-    mask = tf.boolean_mask(predicted, tf.logical_and(tf.equal(protected, first_value), tf.equal(ground_truth, second_value)))
+    mask = tf.boolean_mask(predicted, tf.logical_and(tf.greater_equal(protected, first_value), tf.less(ground_truth, second_value)))
     return tf.cond(
         tf.equal(tf.size(mask), 0),
         lambda: tf.constant(0.0),
@@ -50,7 +70,7 @@ def double_conditional_probability(predicted: tf.Tensor, protected: tf.Tensor, g
     )
 
 
-def tf_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON) -> tf.Tensor:
+def tf_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON, delta: float = DELTA) -> tf.Tensor:
     """
     Calculate the demographic parity of a model.
     The protected attribute can be binary or categorical.
@@ -68,12 +88,35 @@ def tf_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, thresh
     def _single_conditional_probability(value: int) -> tf.Tensor:
         return single_conditional_probability(predicted, protected, value)
 
-    probabilities = tf.map_fn(_single_conditional_probability, unique_protected)
-    result = tf.reduce_sum(tf.abs(probabilities - absolute_probability))
+    def _continuous_conditional_probability() -> tf.Tensor:
+        min_protected = tf.math.reduce_min(unique_protected)
+        max_protected = tf.math.reduce_max(unique_protected)
+        interval = max_protected - min_protected
+        step = tf.cast(interval * delta, tf.float32)
+        probabilities = tf.map_fn(
+            lambda value: single_conditional_probability_in_range(predicted, protected, value, value + step),
+            tf.range(min_protected, max_protected, step)
+        )
+        result = tf.reduce_sum(tf.abs(probabilities - absolute_probability))
+        return tf.cond(
+            tf.less(result, threshold),
+            lambda: tf.constant(0.0),
+            lambda: result
+        )
+
+    def _discrete_conditional_probability() -> tf.Tensor:
+        probabilities = tf.map_fn(_single_conditional_probability, unique_protected)
+        result = tf.reduce_sum(tf.abs(probabilities - absolute_probability))
+        return tf.cond(
+            tf.less(result, threshold),
+            lambda: tf.constant(0.0),
+            lambda: result
+        )
+
     return tf.cond(
-        tf.less(result, threshold),
-        lambda: tf.constant(0.0),
-        lambda: result
+        tf.greater(tf.cast(tf.shape(unique_protected)[0], tf.float32), tf.constant(1/DELTA)),
+        lambda: _continuous_conditional_probability(),
+        lambda: _discrete_conditional_probability()
     )
 
 
