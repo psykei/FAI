@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 from torch import optim
 from configuration import *
-from dataset.cho_dataset_pipeline import FairnessChoDataset
+from dataset.cho_data_pipeline import FairnessChoDataset
 from fairness.cho import PATH as CHO_PATH, Classifier, train_fair_classifier
 from fairness.metric import is_demographic_parity, is_equalized_odds, is_disparate_impact
 
