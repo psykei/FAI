@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from dataset.cho_dataset_pipeline import CustomDataset
+from dataset.cho_data_pipeline import CustomDataset
 from utils import PyTorchConditions
 
 PATH = Path(__file__).parents[0]
@@ -72,7 +72,7 @@ def measures_from_y_hat(y, z, y_hat=None, threshold=0.5):
     return pd.DataFrame([data], columns=columns)
 
 
-def train_fair_classifier(dataset, net, optimizer, lr_scheduler, fairness, lambda_, h, delta, device, n_epochs=5000, batch_size=500, seed=0):
+def train_fair_classifier(dataset, net, optimizer, lr_scheduler, fairness, lambda_, h, delta, device, n_epochs=5000, batch_size=500):
     # Retrieve train/test split pytorch tensors for index=split
     train_tensors, valid_tensors, test_tensors = dataset.get_dataset_in_tensor()
     X_train, Y_train, Z_train, XZ_train = train_tensors

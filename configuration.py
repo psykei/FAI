@@ -11,7 +11,7 @@ EPOCHS = 5000
 BATCH_SIZE = 500
 NEURONS_PER_LAYER = [100, 50]
 VERBOSE = 0
-IDX = 0  # index of the sensitive attribute [0 = age, 8 = sex, 7 = ethnicity, ...]
+IDX = 8  # index of the sensitive attribute [0 = age, 8 = sex, 7 = ethnicity, ...]
 CUSTOM_METRICS = ["demographic_parity"]
 # CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 ONE_HOT = False
