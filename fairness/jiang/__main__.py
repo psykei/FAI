@@ -13,7 +13,8 @@ from fairness.metric import is_demographic_parity, is_equalized_odds, is_dispara
 
 
 DATA_LOSS = nn.functional.binary_cross_entropy
-
+CONTINUOUS = True if IDX == 0 else False
+# CONTINUOUS = False
 
 for metric in CHO_METRICS:
     for JIANG_LAMBDA in JIANG_LAMBDAS:
@@ -22,7 +23,7 @@ for metric in CHO_METRICS:
             idf += "_" + str(ONE_HOT)
         filename = str(JIANG_PATH) + os.sep + LOG + os.sep + hashlib.md5(str(idf).encode()).hexdigest() + ".txt"
         if not os.path.exists(filename):
-            dataset, train, test, kfold = initialize_experiment(filename, metric, JIANG_LAMBDA, preprocess=False)
+            dataset, train, test, kfold = initialize_experiment(filename, metric, JIANG_LAMBDA, preprocess=True, min_max=True)
             mean_accuracy, mean_demographic_parity, mean_disparate_impact, mean_equalized_odds = 0, 0, 0, 0
             for fold, (train_idx, valid_idx) in enumerate(kfold.split(train)):
 
@@ -69,9 +70,9 @@ for metric in CHO_METRICS:
                 logger.info(f"Test accuracy: {accuracy:.4f}")
                 y_pred = y_pred.detach().cpu().numpy()
                 mean_accuracy += accuracy
-                mean_demographic_parity += is_demographic_parity(fairness_dataset.Z_test, y_pred)
-                mean_disparate_impact += is_disparate_impact(fairness_dataset.Z_test, y_pred)
-                mean_equalized_odds += is_equalized_odds(fairness_dataset.Z_test, fairness_dataset.Y_test, y_pred)
+                mean_demographic_parity += is_demographic_parity(fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS)
+                mean_disparate_impact += is_disparate_impact(fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS)
+                mean_equalized_odds += is_equalized_odds(fairness_dataset.Z_test, fairness_dataset.Y_test, y_pred, continuous=CONTINUOUS)
 
             mean_accuracy /= K
             mean_demographic_parity /= K

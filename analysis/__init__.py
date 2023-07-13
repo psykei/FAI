@@ -70,6 +70,7 @@ def is_lambda_equal(file: Path, l: float) -> bool:
 
 
 def is_complete(file: Path) -> bool:
+    import os
 
     def is_value_present(line: str) -> bool:
         return len(line.split(":")) == 2
@@ -79,6 +80,9 @@ def is_complete(file: Path) -> bool:
         condition = len(lines) >= MINIMUM_AMOUNT_OF_ROWS
         for idx in range(1, MINIMUM_AMOUNT_OF_ROWS + 1):
             condition &= is_value_present(lines[-idx])
+        # if not condition:
+        #     print(f"Removing {file} because it is incomplete.")
+        #     os.remove(file)
         return condition
 
 

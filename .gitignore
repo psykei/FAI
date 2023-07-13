@@ -1,4 +1,5 @@
 .idea/
+*.DS_Store
 dataset/cache
 fairness/log/
 fairness/*/log
