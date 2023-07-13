@@ -49,6 +49,8 @@ def regularized_learning(dataset_loader, x_val, y_val, z_val, x_test, y_test, z_
         # Early stopping
         if conditions.early_stop(epoch=epoch, accuracy=acc_val, fairness_metric=dp_val):
             break
+        # if epoch % 10 == 0:
+        #     print(f"Epoch {epoch}: loss={loss_val:.4f}, acc={acc_val:.4f}, dp={dp_val:.4f}")
     y_test_pred = model(x_test).detach().flatten()
     return y_test_pred
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from dataset import PATH as DATASET_PATH
 
 DEFAULT_SEED = 0
@@ -42,7 +42,7 @@ class AdultLoader:
                 )
                 return train_df, val_df, test_df
 
-        def setup(self, df: pd.DataFrame, one_hot: bool = True, preprocess: bool = True) -> pd.DataFrame:
+        def setup(self, df: pd.DataFrame, one_hot: bool = True, preprocess: bool = True, min_max: bool = False) -> pd.DataFrame:
             df.income = df.income.apply(
                 lambda x: 0 if x.replace(" ", "") in ("<=50K", "<=50K.") else 1
             )
@@ -64,7 +64,7 @@ class AdultLoader:
             df = df.astype(float)
             output = df.pop("income")
             if preprocess:
-                scaler = StandardScaler()
+                scaler = StandardScaler() if not min_max else MinMaxScaler()
                 df = pd.DataFrame(scaler.fit_transform(df))
             df["income"] = output
             return df
@@ -121,12 +121,12 @@ class AdultLoader:
         result = pd.concat([df_train, df_test], axis=0)
         return result
 
-    def load_preprocessed(self, all_datasets: bool = False, one_hot: bool = True, preprocess: bool = True) -> pd.DataFrame:
+    def load_preprocessed(self, all_datasets: bool = False, one_hot: bool = True, preprocess: bool = True, min_max: bool = False) -> pd.DataFrame:
         if all_datasets:
             df = self.load_all()
         else:
             df = self.load()
-        return self.processor.setup(df, one_hot=one_hot, preprocess=preprocess)
+        return self.processor.setup(df, one_hot=one_hot, preprocess=preprocess, min_max=min_max)
 
     def load_preprocessed_split(self, validation: bool = True, all_datasets: bool = False, one_hot: bool = True) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
         if all_datasets:

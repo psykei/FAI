@@ -31,6 +31,7 @@ def cost_combiner(first_cost: tf.Tensor, second_cost: tf.Tensor) -> tf.Tensor:
 def compute_experiments_given_fairness_metric(metric: str = None):
 
     def compute_experiments_given_lambda(l: float = 1.0):
+        continuous = True if IDX == 0 else False
         idf = '_'.join([str(x) for x in [SEED, K, EPOCHS, BATCH_SIZE, NEURONS_PER_LAYER, IDX, metric, l]])
         if not ONE_HOT:
             idf += "_" + str(ONE_HOT)
@@ -95,9 +96,9 @@ def compute_experiments_given_fairness_metric(metric: str = None):
                 predictions = np.squeeze(np.round(model.predict(test.iloc[:, :-1])))
                 mean_loss += loss
                 mean_accuracy += accuracy
-                mean_demographic_parity += is_demographic_parity(test.iloc[:, IDX].to_numpy(), predictions, numeric=True)
-                mean_disparate_impact += is_disparate_impact(test.iloc[:, IDX].to_numpy(), predictions, numeric=True)
-                mean_equalized_odds += is_equalized_odds(test.iloc[:, IDX].to_numpy(), test.iloc[:, -1].to_numpy(), predictions, numeric=True)
+                mean_demographic_parity += is_demographic_parity(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
+                mean_disparate_impact += is_disparate_impact(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
+                mean_equalized_odds += is_equalized_odds(test.iloc[:, IDX].to_numpy(), test.iloc[:, -1].to_numpy(), predictions, numeric=True, continuous=continuous)
                 # sleep(60*2)
             mean_loss /= K
             mean_accuracy /= K
