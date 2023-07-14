@@ -80,9 +80,9 @@ def is_complete(file: Path) -> bool:
         condition = len(lines) >= MINIMUM_AMOUNT_OF_ROWS
         for idx in range(1, MINIMUM_AMOUNT_OF_ROWS + 1):
             condition &= is_value_present(lines[-idx])
-        # if not condition:
-        #     print(f"Removing {file} because it is incomplete.")
-        #     os.remove(file)
+        if not condition:
+            print(f"Removing {file} because it is incomplete.")
+            os.remove(file)
         return condition
 
 

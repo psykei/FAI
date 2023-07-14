@@ -181,7 +181,7 @@ def is_equalized_odds(
     else:
         probabilities_a_0 = np.array([np.mean(y_pred[(p == x) & (y_true == 0)]) for x in unique_protected])
         probabilities_a_1 = np.array([np.mean(y_pred[(p == x) & (y_true == 1)]) for x in unique_protected])
-        number_of_samples = np.array([np.sum(p == x and y_true == y) for x in unique_protected for y in [0, 1]])
+        number_of_samples = np.array([np.sum((p == x) * (y_true == y)) for x in unique_protected for y in [0, 1]])
         equalized_odds = np.abs(np.concatenate([probabilities_a_0 - conditional_prob_zero, probabilities_a_1 - conditional_prob_one]))
         equalized_odds = np.nan_to_num(equalized_odds)
         equalized_odds = np.sum(equalized_odds * number_of_samples) / np.sum(number_of_samples)

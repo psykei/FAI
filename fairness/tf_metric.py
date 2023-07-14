@@ -105,7 +105,7 @@ def double_conditional_probability_in_range(predicted: tf.Tensor, protected: tf.
     )
 
 
-def tf_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON, delta: float = DELTA, continuous: bool = False) -> tf.Tensor:
+def discrete_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON) -> tf.Tensor:
     """
     Calculate the demographic parity of a model.
     The protected attribute can be binary or categorical.
@@ -125,45 +125,52 @@ def tf_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, thresh
     def _single_conditional_probability(value: int) -> tf.Tensor:
         return single_conditional_probability(predicted, protected, value)
 
-    def _continuous_conditional_probability() -> tf.Tensor:
-        min_protected = tf.math.reduce_min(unique_protected)
-        max_protected = tf.math.reduce_max(unique_protected)
-        interval = max_protected - min_protected
-        step = tf.cast(interval * delta, tf.float32)
-        probabilities = tf.map_fn(
-            lambda value: single_conditional_probability_in_range(predicted, protected, value, value + step),
-            tf.range(min_protected, max_protected, step)
-        )
-        number_of_samples = tf.map_fn(
-            lambda value: tf.cast(tf.size(tf.boolean_mask(protected, tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)))), tf.float32),
-            tf.range(min_protected, max_protected, step)
-        )
-        result = tf.reduce_sum(tf.abs(probabilities - absolute_probability) * number_of_samples) / tf.reduce_sum(number_of_samples)
-        return tf.cond(
-            tf.less(result, threshold),
-            lambda: tf.constant(0.0),
-            lambda: result
-        )
+    probabilities = tf.map_fn(_single_conditional_probability, unique_protected)
+    number_of_samples = tf.map_fn(
+        lambda value: tf.reduce_sum(tf.cast(tf.equal(protected, value), tf.float32)),
+        unique_protected
+    )
+    result = tf.reduce_sum(tf.abs(probabilities - absolute_probability) * number_of_samples) / tf.reduce_sum(number_of_samples)
+    return tf.cond(
+        tf.less(result, threshold),
+        lambda: tf.constant(0.0),
+        lambda: result
+    )
 
-    def _discrete_conditional_probability() -> tf.Tensor:
-        probabilities = tf.map_fn(_single_conditional_probability, unique_protected)
-        number_of_samples = tf.map_fn(
-            lambda value: tf.cast(tf.size(tf.boolean_mask(protected, tf.equal(protected, value))), tf.float32),
-            unique_protected
-        )
-        result = tf.reduce_sum(tf.abs(probabilities - absolute_probability) * number_of_samples) / tf.reduce_sum(number_of_samples)
-        return tf.cond(
-            tf.less(result, threshold),
-            lambda: tf.constant(0.0),
-            lambda: result
-        )
 
-    # return tf.cond(
-    #     tf.equal(tf.constant(continuous), tf.constant(True)),
-    #     lambda: _continuous_conditional_probability(),
-    #     lambda: _discrete_conditional_probability()
-    # )
-    return _continuous_conditional_probability()
+def continuous_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON, delta: float = DELTA) -> tf.Tensor:
+    """
+    Calculate the demographic parity of a model.
+    The protected attribute must be continuous.
+
+    @param index: the index of the protected attribute.
+    @param x: the input data.
+    @param predicted: the predicted labels.
+    @param threshold: the target threshold for demographic parity.
+    @param delta: the percentage to apply to the values of the protected attribute to create the buckets.
+    @return: the demographic impact error.
+    """
+    protected = x[:, index]
+    unique_protected, _ = tf.unique(protected)
+    absolute_probability = tf.math.reduce_mean(predicted)
+    min_protected = tf.math.reduce_min(unique_protected)
+    max_protected = tf.math.reduce_max(unique_protected)
+    interval = max_protected - min_protected
+    step = tf.cast(interval * delta, tf.float32)
+    probabilities = tf.map_fn(
+        lambda value: single_conditional_probability_in_range(predicted, protected, value, value + step),
+        tf.range(min_protected, max_protected, step)
+    )
+    number_of_samples = tf.map_fn(
+        lambda value: tf.cast(tf.size(tf.boolean_mask(protected, tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)))), tf.float32),
+        tf.range(min_protected, max_protected, step)
+    )
+    result = tf.reduce_sum(tf.abs(probabilities - absolute_probability) * number_of_samples) / tf.reduce_sum(number_of_samples)
+    return tf.cond(
+        tf.less(result, threshold),
+        lambda: tf.constant(0.0),
+        lambda: result
+    )
 
 
 def tf_disparate_impact(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = 0.8, delta: float = DELTA, continuous: bool = False) -> tf.Tensor:
