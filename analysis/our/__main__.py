@@ -7,8 +7,8 @@ from images.our import PATH as IMAGES_PATH
 from configuration import LAMBDAS, IDX_TO_NAME
 from images import plot_fairness_metric
 
-IDXS = [0]
-CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
+IDXS = [0, 7, 8]
+CUSTOM_METRICS = ["demographic_parity"]
 FAIRNESS_METRIC_SHORT_NAMES = {
     "demographic_parity": "dp",
     "disparate_impact": "di",

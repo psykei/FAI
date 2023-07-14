@@ -13,7 +13,8 @@ from tqdm.keras import TqdmCallback
 from dataset.adult_data_pipeline import AdultLoader
 from fairness import enable_logging, enable_file_logging, logger, disable_file_logging
 from fairness.metric import is_demographic_parity, is_disparate_impact, is_equalized_odds, EPSILON
-from fairness.tf_metric import tf_demographic_parity, tf_disparate_impact, tf_equalized_odds
+from fairness.tf_metric import continuous_demographic_parity, tf_disparate_impact, tf_equalized_odds, \
+    discrete_demographic_parity
 from utils import create_fully_connected_nn, Conditions
 import numpy as np
 from fairness import PATH as FAIRNESS_PATH
@@ -56,7 +57,7 @@ def compute_experiments_given_fairness_metric(metric: str = None):
                 x = model.layers[0].input
 
                 if metric == "demographic_parity":
-                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * tf_demographic_parity(IDX, x, y_pred))
+                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * continuous_demographic_parity(IDX, x, y_pred))
                 elif metric == "disparate_impact":
                     custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * tf_disparate_impact(IDX, x, y_pred, threshold=1-EPSILON))
                 elif metric == "equalized_odds":
@@ -64,8 +65,12 @@ def compute_experiments_given_fairness_metric(metric: str = None):
                 else:
                     custom_loss = binary_crossentropy
 
-                def demographic_parity(y_true, y_pred):
-                    return tf_demographic_parity(IDX, x, y_pred)
+                if continuous:
+                    def demographic_parity(y_true, y_pred):
+                        return continuous_demographic_parity(IDX, x, y_pred)
+                else:
+                    def demographic_parity(y_true, y_pred):
+                        return discrete_demographic_parity(IDX, x, y_pred)
 
                 def disparate_impact(y_true, y_pred):
                     return tf_disparate_impact(IDX, x, y_pred)
@@ -90,22 +95,23 @@ def compute_experiments_given_fairness_metric(metric: str = None):
                 model.compile(optimizer=Adam(), loss=custom_loss, metrics=metrics)
                 model.fit(train.iloc[:, :-1], train.iloc[:, -1], epochs=EPOCHS, batch_size=BATCH_SIZE, verbose=VERBOSE,
                           validation_data=(valid_x, valid_y),callbacks=[TqdmCallback(verbose=VERBOSE), early_stopping])
-                loss, accuracy, _, = model.evaluate(test.iloc[:, :-1], test.iloc[:, -1], verbose=VERBOSE)
-                logger.info(f"Test loss: {loss:.4f}")
-                logger.info(f"Test accuracy: {accuracy:.4f}")
+                # loss, accuracy, _, = model.evaluate(test.iloc[:, :-1], test.iloc[:, -1], verbose=VERBOSE)
+                # logger.info(f"Test loss: {loss:.4f}")
                 predictions = np.squeeze(np.round(model.predict(test.iloc[:, :-1])))
-                mean_loss += loss
+                accuracy = np.mean(predictions == test.iloc[:, -1].to_numpy())
+                logger.info(f"Test accuracy: {accuracy:.4f}")
+                # mean_loss += loss
                 mean_accuracy += accuracy
                 mean_demographic_parity += is_demographic_parity(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
                 mean_disparate_impact += is_disparate_impact(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
                 mean_equalized_odds += is_equalized_odds(test.iloc[:, IDX].to_numpy(), test.iloc[:, -1].to_numpy(), predictions, numeric=True, continuous=continuous)
                 # sleep(60*2)
-            mean_loss /= K
+            # mean_loss /= K
             mean_accuracy /= K
             mean_demographic_parity /= K
             mean_disparate_impact /= K
             mean_equalized_odds /= K
-            logger.info(f"Mean test loss: {mean_loss:.4f}")
+            # logger.info(f"Mean test loss: {mean_loss:.4f}")
             logger.info(f"Mean test accuracy: {mean_accuracy:.4f}")
             logger.info(f"Mean demographic parity: {mean_demographic_parity:.4f}")
             logger.info(f"Mean disparate impact: {mean_disparate_impact:.4f}")
