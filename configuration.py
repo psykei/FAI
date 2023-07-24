@@ -11,7 +11,7 @@ EPOCHS = 5000
 BATCH_SIZE = 500
 NEURONS_PER_LAYER = [100, 50]
 VERBOSE = 0
-IDX = 7  # index of the sensitive attribute [0 = age, 7 = ethnicity, 8 = sex,...]
+IDX = 8  # index of the sensitive attribute [0 = age, 7 = ethnicity, 8 = sex,...]
 CUSTOM_METRICS = ["demographic_parity"]
 # CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 ONE_HOT = False
@@ -22,7 +22,7 @@ IDX_TO_NAME = {
 }
 
 # Hyperparameters of our method
-MAX_LAMBDA = 5
+MAX_LAMBDA = 1
 STEPS = 0.1
 LAMBDAS = [((MAX_LAMBDA * (1 / STEPS)) - i)/(1/STEPS) for i in range(0, int(MAX_LAMBDA * (1 / STEPS)))]
 LAMBDAS = sorted(LAMBDAS, reverse=False)
@@ -45,8 +45,8 @@ CHO_METRICS = ["demographic_parity"]
 # CHO_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 
 # Jiang's method configuration
-JIANG_MAX_LAMBDA = 50
-JIANG_STEPS = 1
+JIANG_MAX_LAMBDA = 1
+JIANG_STEPS = 0.1
 JIANG_LAMBDAS = [((JIANG_MAX_LAMBDA * (1 / JIANG_STEPS)) - i)/(1/JIANG_STEPS) for i in range(0, int(JIANG_MAX_LAMBDA * (1 / JIANG_STEPS)))]
 JIANG_METRICS = ["demographic_parity"]
 

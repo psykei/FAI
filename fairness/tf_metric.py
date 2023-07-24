@@ -105,7 +105,7 @@ def double_conditional_probability_in_range(predicted: tf.Tensor, protected: tf.
     )
 
 
-def discrete_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON) -> tf.Tensor:
+def discrete_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor) -> tf.Tensor:
     """
     Calculate the demographic parity of a model.
     The protected attribute can be binary or categorical.
@@ -113,9 +113,6 @@ def discrete_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, 
     @param index: the index of the protected attribute.
     @param x: the input data.
     @param predicted: the predicted labels.
-    @param threshold: the target threshold for demographic parity.
-    @param delta: the percentage to apply to the values of the protected attribute to create the buckets.
-    @param continuous: if True, the protected attribute is continuous, otherwise it is discrete.
     @return: the demographic impact error.
     """
     protected = x[:, index]
@@ -131,14 +128,10 @@ def discrete_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, 
         unique_protected
     )
     result = tf.reduce_sum(tf.abs(probabilities - absolute_probability) * number_of_samples) / tf.reduce_sum(number_of_samples)
-    return tf.cond(
-        tf.less(result, threshold),
-        lambda: tf.constant(0.0),
-        lambda: result
-    )
+    return result
 
 
-def continuous_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON, delta: float = DELTA) -> tf.Tensor:
+def continuous_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor, delta: float = DELTA) -> tf.Tensor:
     """
     Calculate the demographic parity of a model.
     The protected attribute must be continuous.
@@ -146,7 +139,6 @@ def continuous_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor
     @param index: the index of the protected attribute.
     @param x: the input data.
     @param predicted: the predicted labels.
-    @param threshold: the target threshold for demographic parity.
     @param delta: the percentage to apply to the values of the protected attribute to create the buckets.
     @return: the demographic impact error.
     """
@@ -166,14 +158,11 @@ def continuous_demographic_parity(index: int, x: tf.Tensor, predicted: tf.Tensor
         tf.range(min_protected, max_protected, step)
     )
     result = tf.reduce_sum(tf.abs(probabilities - absolute_probability) * number_of_samples) / tf.reduce_sum(number_of_samples)
-    return tf.cond(
-        tf.less(result, threshold),
-        lambda: tf.constant(0.0),
-        lambda: result
-    )
+    return result
 
 
-def tf_disparate_impact(index: int, x: tf.Tensor, predicted: tf.Tensor, threshold: float = 0.8, delta: float = DELTA, continuous: bool = False) -> tf.Tensor:
+def discrete_disparate_impact(index: int, x: tf.Tensor, predicted: tf.Tensor) -> tf.Tensor:
+
     """
     Calculate the disparate impact of a model.
     The protected attribute is must be binary or categorical.
@@ -181,51 +170,50 @@ def tf_disparate_impact(index: int, x: tf.Tensor, predicted: tf.Tensor, threshol
     @param index: the index of the protected attribute.
     @param x: the input data.
     @param predicted: the predicted labels.
-    @param threshold: the target threshold for disparate impact.
-    @param delta: the percentage to apply to the values of the protected attribute to create the buckets.
-    @param continuous: if True, the protected attribute is continuous, otherwise it is discrete.
     @return: the disparate impact error.
     """
     protected = x[:, index]
     unique_protected, _ = tf.unique(protected)
-
-    def _continuous_disparate_impact():
-        min_protected = tf.math.reduce_min(unique_protected)
-        max_protected = tf.math.reduce_max(unique_protected)
-        interval = max_protected - min_protected
-        step = tf.cast(interval * delta, tf.float32)
-        probabilities_a = tf.map_fn(
-            lambda value: single_conditional_probability_in_range(predicted, protected, value, value + step),
-            tf.range(min_protected, max_protected, step)
-        )
-        probabilities_not_a = tf.map_fn(
-            lambda value: single_conditional_probability_in_range(predicted, protected, value, value + step, inside=False),
-            tf.range(min_protected, max_protected, step)
-        )
-        return probabilities_a, probabilities_not_a
-
-    def _discrete_disparate_impact():
-        probabilities_a = tf.map_fn(lambda value: single_conditional_probability(predicted, protected, value), unique_protected)
-        probabilities_not_a = tf.map_fn(lambda value: single_conditional_probability(predicted, protected, value, equal=False), unique_protected)
-        return probabilities_a, probabilities_not_a
-
-    p_a, p_not_a = tf.cond(
-        tf.equal(tf.constant(continuous), tf.constant(True)),
-        lambda: _continuous_disparate_impact(),
-        lambda: _discrete_disparate_impact()
-    )
-    impacts = tf.math.divide_no_nan(p_a, tf.math.reduce_mean(predicted))
-    inverse_impacts = tf.math.divide_no_nan(p_not_a, tf.math.reduce_mean(predicted))
+    probabilities_a = tf.map_fn(lambda value: single_conditional_probability(predicted, protected, value), unique_protected)
+    probabilities_not_a = tf.map_fn(lambda value: single_conditional_probability(predicted, protected, value, equal=False), unique_protected)
+    impacts = tf.math.divide_no_nan(probabilities_a, tf.math.reduce_mean(predicted))
+    inverse_impacts = tf.math.divide_no_nan(probabilities_not_a, tf.math.reduce_mean(predicted))
     result = 1 - tf.reduce_min(tf.concat([impacts, inverse_impacts], axis=0))
+    return result
 
-    return tf.cond(
-        tf.less(result, 1.0 - threshold),
-        lambda: tf.constant(0.0),
-        lambda: result
+
+def continuous_disparate_impact(index: int, x: tf.Tensor, predicted: tf.Tensor, delta: float = DELTA) -> tf.Tensor:
+    """
+    Calculate the disparate impact of a model.
+    The protected attribute is must be binary or categorical.
+
+    @param index: the index of the protected attribute.
+    @param x: the input data.
+    @param predicted: the predicted labels.
+    @param delta: the percentage to apply to the values of the protected attribute to create the buckets.
+    @return: the disparate impact error.
+    """
+    protected = x[:, index]
+    unique_protected, _ = tf.unique(protected)
+    min_protected = tf.math.reduce_min(unique_protected)
+    max_protected = tf.math.reduce_max(unique_protected)
+    interval = max_protected - min_protected
+    step = tf.cast(interval * delta, tf.float32)
+    probabilities_a = tf.map_fn(
+        lambda value: single_conditional_probability_in_range(predicted, protected, value, value + step),
+        tf.range(min_protected, max_protected, step)
     )
+    probabilities_not_a = tf.map_fn(
+        lambda value: single_conditional_probability_in_range(predicted, protected, value, value + step, inside=False),
+        tf.range(min_protected, max_protected, step)
+    )
+    impacts = tf.math.divide_no_nan(probabilities_a, tf.math.reduce_mean(predicted))
+    inverse_impacts = tf.math.divide_no_nan(probabilities_not_a, tf.math.reduce_mean(predicted))
+    result = 1 - tf.reduce_min(tf.concat([impacts, inverse_impacts], axis=0))
+    return result
 
 
-def tf_equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted: tf.Tensor, threshold: float = EPSILON, delta: float = DELTA, continuous: bool = False) -> tf.Tensor:
+def discrete_equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted: tf.Tensor) -> tf.Tensor:
     """
     Calculate the equalized odds of a model.
     The protected attribute is must be binary or categorical.
@@ -234,59 +222,57 @@ def tf_equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted: tf.Tens
     :param x: the input data.
     :param y: the ground truth labels.
     :param predicted: the predicted labels.
-    :param threshold: the target threshold for equalized odds.
-    :param delta: the percentage to apply to the values of the protected attribute to create the buckets.
-    :param continuous: if True, the protected attribute is continuous, otherwise it is discrete.
     :return: the equalized odds error.
     """
     protected = x[:, index]
     unique_protected, _ = tf.unique(protected)
+    masks_a_0 = tf.map_fn(lambda value: double_conditional_probability(predicted, protected, y[:, 0], value, 0), unique_protected)
+    masks_a_1 = tf.map_fn(lambda value: double_conditional_probability(predicted, protected, y[:, 0], value, 1), unique_protected)
+    mask_0 = tf.math.reduce_mean(single_conditional_probability(predicted, y[:, 0], 0))
+    mask_1 = tf.math.reduce_mean(single_conditional_probability(predicted, y[:, 0], 1))
+    number_of_samples_a_0 = tf.map_fn(lambda value: tf.reduce_sum(tf.logical_and(tf.equal(protected, value), tf.equal(y, 0))), unique_protected)
+    number_of_samples_a_1 = tf.map_fn(lambda value: tf.reduce_sum(tf.logical_and(tf.equal(protected, value), tf.equal(y, 1))), unique_protected)
+    differences_0 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_0), masks_a_0)
+    differences_0 = tf.math.multiply_no_nan(differences_0, number_of_samples_a_0)
+    differences_1 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_1), masks_a_1)
+    differences_1 = tf.math.multiply_no_nan(differences_1, number_of_samples_a_1)
+    total_samples = tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)
+    return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) / total_samples
 
-    def _continuous_equalized_odds():
-        min_protected = tf.math.reduce_min(unique_protected)
-        max_protected = tf.math.reduce_max(unique_protected)
-        interval = max_protected - min_protected
-        step = tf.cast(interval * delta, tf.float32)
-        masks_a_0 = tf.map_fn(lambda value: double_conditional_probability_in_range(predicted, protected, y[:, 0], value, value + step, 0), tf.range(min_protected, max_protected, step))
-        masks_a_1 = tf.map_fn(lambda value: double_conditional_probability_in_range(predicted, protected, y[:, 0], value, value + step, 1), tf.range(min_protected, max_protected, step))
-        mask_0 = tf.math.reduce_mean(single_conditional_probability_in_range(predicted, y[:, 0], 0, 1))
-        mask_1 = tf.math.reduce_mean(single_conditional_probability_in_range(predicted, y[:, 0], 1, 1))
-        number_of_samples_a_0 = tf.map_fn(
-            lambda value: tf.reduce_sum(tf.logical_and(tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)), tf.equal(y, 0))),
-            tf.range(min_protected, max_protected, step)
-        )
-        number_of_samples_a_1 = tf.map_fn(
-            lambda value: tf.reduce_sum(tf.logical_and(tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)), tf.equal(y, 1))),
-            tf.range(min_protected, max_protected, step)
-        )
-        differences_0 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_0), masks_a_0)
-        differences_0 = tf.math.multiply_no_nan(differences_0, number_of_samples_a_0)
-        differences_1 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_1), masks_a_1)
-        differences_1 = tf.math.multiply_no_nan(differences_1, number_of_samples_a_1)
-        total_samples = tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)
-        return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) / total_samples
 
-    def _discrete_equalized_odds():
-        masks_a_0 = tf.map_fn(lambda value: double_conditional_probability(predicted, protected, y[:, 0], value, 0), unique_protected)
-        masks_a_1 = tf.map_fn(lambda value: double_conditional_probability(predicted, protected, y[:, 0], value, 1), unique_protected)
-        mask_0 = tf.math.reduce_mean(single_conditional_probability(predicted, y[:, 0], 0))
-        mask_1 = tf.math.reduce_mean(single_conditional_probability(predicted, y[:, 0], 1))
-        number_of_samples_a_0 = tf.map_fn(lambda value: tf.reduce_sum(tf.logical_and(tf.equal(protected, value), tf.equal(y, 0))), unique_protected)
-        number_of_samples_a_1 = tf.map_fn(lambda value: tf.reduce_sum(tf.logical_and(tf.equal(protected, value), tf.equal(y, 1))), unique_protected)
-        differences_0 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_0), masks_a_0)
-        differences_0 = tf.math.multiply_no_nan(differences_0, number_of_samples_a_0)
-        differences_1 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_1), masks_a_1)
-        differences_1 = tf.math.multiply_no_nan(differences_1, number_of_samples_a_1)
-        total_samples = tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)
-        return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) / total_samples
+def continuous_equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted: tf.Tensor, delta: float = DELTA) -> tf.Tensor:
+    """
+    Calculate the equalized odds of a model.
+    The protected attribute is must be binary or categorical.
 
-    result = tf.cond(
-        tf.equal(tf.constant(continuous), tf.constant(True)),
-        lambda: _continuous_equalized_odds(),
-        lambda: _discrete_equalized_odds()
+    :param index: the index of the protected attribute.
+    :param x: the input data.
+    :param y: the ground truth labels.
+    :param predicted: the predicted labels.
+    :param delta: the percentage to apply to the values of the protected attribute to create the buckets.
+    :return: the equalized odds error.
+    """
+    protected = x[:, index]
+    unique_protected, _ = tf.unique(protected)
+    min_protected = tf.math.reduce_min(unique_protected)
+    max_protected = tf.math.reduce_max(unique_protected)
+    interval = max_protected - min_protected
+    step = tf.cast(interval * delta, tf.float32)
+    masks_a_0 = tf.map_fn(lambda value: double_conditional_probability_in_range(predicted, protected, y[:, 0], value, value + step, 0), tf.range(min_protected, max_protected, step))
+    masks_a_1 = tf.map_fn(lambda value: double_conditional_probability_in_range(predicted, protected, y[:, 0], value, value + step, 1), tf.range(min_protected, max_protected, step))
+    mask_0 = tf.math.reduce_mean(single_conditional_probability_in_range(predicted, y[:, 0], 0, 1))
+    mask_1 = tf.math.reduce_mean(single_conditional_probability_in_range(predicted, y[:, 0], 1, 1))
+    number_of_samples_a_0 = tf.map_fn(
+        lambda value: tf.reduce_sum(tf.logical_and(tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)), tf.equal(y, 0))),
+        tf.range(min_protected, max_protected, step)
     )
-    return tf.cond(
-        tf.less(result, threshold),
-        lambda: tf.constant(0.0),
-        lambda: result
+    number_of_samples_a_1 = tf.map_fn(
+        lambda value: tf.reduce_sum(tf.logical_and(tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)), tf.equal(y, 1))),
+        tf.range(min_protected, max_protected, step)
     )
+    differences_0 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_0), masks_a_0)
+    differences_0 = tf.math.multiply_no_nan(differences_0, number_of_samples_a_0)
+    differences_1 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_1), masks_a_1)
+    differences_1 = tf.math.multiply_no_nan(differences_1, number_of_samples_a_1)
+    total_samples = tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)
+    return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) / total_samples

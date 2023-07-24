@@ -12,8 +12,8 @@ from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tqdm.keras import TqdmCallback
 from dataset.adult_data_pipeline import AdultLoader
 from fairness import enable_logging, enable_file_logging, logger, disable_file_logging
-from fairness.metric import is_demographic_parity, is_disparate_impact, is_equalized_odds, EPSILON
-from fairness.tf_metric import continuous_demographic_parity, tf_disparate_impact, tf_equalized_odds, \
+from fairness.metric import demographic_parity, disparate_impact, equalized_odds, EPSILON
+from fairness.tf_metric import continuous_demographic_parity, continuous_disparate_impact, continuous_equalized_odds, \
     discrete_demographic_parity
 from utils import create_fully_connected_nn, Conditions
 import numpy as np
@@ -59,9 +59,9 @@ def compute_experiments_given_fairness_metric(metric: str = None):
                 if metric == "demographic_parity":
                     custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * continuous_demographic_parity(IDX, x, y_pred))
                 elif metric == "disparate_impact":
-                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * tf_disparate_impact(IDX, x, y_pred, threshold=1-EPSILON))
+                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * continuous_disparate_impact(IDX, x, y_pred, threshold=1 - EPSILON))
                 elif metric == "equalized_odds":
-                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * tf_equalized_odds(IDX, x, y_true, y_pred))
+                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * continuous_equalized_odds(IDX, x, y_true, y_pred))
                 else:
                     custom_loss = binary_crossentropy
 
@@ -73,10 +73,10 @@ def compute_experiments_given_fairness_metric(metric: str = None):
                         return discrete_demographic_parity(IDX, x, y_pred)
 
                 def disparate_impact(y_true, y_pred):
-                    return tf_disparate_impact(IDX, x, y_pred)
+                    return continuous_disparate_impact(IDX, x, y_pred)
 
                 def equalized_odds(y_true, y_pred):
-                    return tf_equalized_odds(IDX, x, y_true, y_pred)
+                    return continuous_equalized_odds(IDX, x, y_true, y_pred)
 
                 fairness_metric = demographic_parity
                 if metric == "demographic_parity":
@@ -102,9 +102,9 @@ def compute_experiments_given_fairness_metric(metric: str = None):
                 logger.info(f"Test accuracy: {accuracy:.4f}")
                 # mean_loss += loss
                 mean_accuracy += accuracy
-                mean_demographic_parity += is_demographic_parity(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
-                mean_disparate_impact += is_disparate_impact(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
-                mean_equalized_odds += is_equalized_odds(test.iloc[:, IDX].to_numpy(), test.iloc[:, -1].to_numpy(), predictions, numeric=True, continuous=continuous)
+                mean_demographic_parity += demographic_parity(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
+                mean_disparate_impact += disparate_impact(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
+                mean_equalized_odds += equalized_odds(test.iloc[:, IDX].to_numpy(), test.iloc[:, -1].to_numpy(), predictions, numeric=True, continuous=continuous)
                 # sleep(60*2)
             # mean_loss /= K
             mean_accuracy /= K

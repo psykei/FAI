@@ -4,7 +4,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from dataset.adult_data_pipeline import AdultLoader
 from fairness import enable_logging, LOG_INFO, logger
-from fairness.metric import is_equalized_odds
+from fairness.metric import equalized_odds
 
 
 class TestEqualizedOdds(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestEqualizedOdds(unittest.TestCase):
 
     def test_perfect_model(self):
         self.assertTrue(
-            is_equalized_odds(
+            equalized_odds(
                 self.adult_train_p, self.adult_train_y, self.adult_train_y, numeric=False
             )
         )
@@ -55,7 +55,7 @@ class TestEqualizedOdds(unittest.TestCase):
             self.adult_train_x, self.adult_train_y, self.adult_test_x
         )
         self.assertFalse(
-            is_equalized_odds(
+            equalized_odds(
                 self.adult_test_p, self.adult_test_y, adult_prediction, self.low_epsilon, numeric=False
             )
         )
@@ -65,7 +65,7 @@ class TestEqualizedOdds(unittest.TestCase):
             self.adult_train_x, self.adult_train_y, self.adult_test_x
         )
         self.assertTrue(
-            is_equalized_odds(
+            equalized_odds(
                 self.adult_test_p,
                 self.adult_test_y,
                 adult_prediction,
