@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from dataset.adult_data_pipeline import AdultLoader
 from fairness import enable_logging, LOG_INFO, logger
-from fairness.metric import is_demographic_parity
+from fairness.metric import demographic_parity
 
 
 class TestDemographicParity(unittest.TestCase):
@@ -28,15 +28,15 @@ class TestDemographicParity(unittest.TestCase):
 
     def test_metric_is_not_nan_with_monotonic_protected_feature(self):
         p = np.full((self.adult_train_p.shape[0]), 1)
-        result = is_demographic_parity(p, self.adult_train_y)
+        result = demographic_parity(p, self.adult_train_y)
         self.assertNotEqual(result, np.nan)
 
     def test_unfair_model(self):
-        self.assertFalse(is_demographic_parity(self.adult_train_p, self.adult_train_y, numeric=False))
+        self.assertFalse(demographic_parity(self.adult_train_p, self.adult_train_y, numeric=False))
 
     def test_unfair_model_with_high_epsilon(self):
         self.assertTrue(
-            is_demographic_parity(
+            demographic_parity(
                 self.adult_train_p, self.adult_train_y, epsilon=self.high_epsilon, numeric=False
             )
         )

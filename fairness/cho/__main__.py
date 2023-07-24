@@ -7,7 +7,7 @@ from torch import optim
 from configuration import *
 from dataset.cho_data_pipeline import FairnessChoDataset
 from fairness.cho import PATH as CHO_PATH, Classifier, train_fair_classifier
-from fairness.metric import is_demographic_parity, is_equalized_odds, is_disparate_impact
+from fairness.metric import demographic_parity, equalized_odds, disparate_impact
 
 
 CONTINUOUS = True if IDX == 0 else False
@@ -56,9 +56,9 @@ for metric in CHO_METRICS:
                 accuracy = accuracy_score(fairness_dataset.Y_test, y_pred)
                 logger.info(f"Test accuracy: {accuracy:.4f}")
                 mean_accuracy += accuracy
-                mean_demographic_parity += is_demographic_parity(fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS)
-                mean_disparate_impact += is_disparate_impact(fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS)
-                mean_equalized_odds += is_equalized_odds(fairness_dataset.Z_test, fairness_dataset.Y_test, y_pred, continuous=CONTINUOUS)
+                mean_demographic_parity += demographic_parity(fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS)
+                mean_disparate_impact += disparate_impact(fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS)
+                mean_equalized_odds += equalized_odds(fairness_dataset.Z_test, fairness_dataset.Y_test, y_pred, continuous=CONTINUOUS)
 
             mean_accuracy /= K
             mean_demographic_parity /= K

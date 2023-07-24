@@ -1,7 +1,7 @@
 import unittest
 from dataset.adult_data_pipeline import AdultLoader
 from fairness import enable_logging, LOG_INFO, logger
-from fairness.metric import is_disparate_impact
+from fairness.metric import disparate_impact
 
 
 class TestDisparateImpact(unittest.TestCase):
@@ -26,11 +26,11 @@ class TestDisparateImpact(unittest.TestCase):
         self.adult_train_y = adult_train_dataset.iloc[:, -1].values
 
     def test_model(self):
-        self.assertFalse(is_disparate_impact(self.adult_train_p, self.adult_train_y, numeric=False))
+        self.assertFalse(disparate_impact(self.adult_train_p, self.adult_train_y, numeric=False))
 
     def test_model_with_low_threshold(self):
         self.assertTrue(
-            is_disparate_impact(
+            disparate_impact(
                 self.adult_train_p, self.adult_train_y, threshold=self.low_threshold, numeric=False
             )
         )
