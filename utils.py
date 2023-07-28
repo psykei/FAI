@@ -54,12 +54,11 @@ class Conditions(Callback):
         best_metric_condition = True
         fairness_metric = 0
         if self.fairness_metric_name is not None:
-            fairness_metric = logs.get("val_" + self.fairness_metric_name)
+            fairness_metric = logs.get("val_tf_" + self.fairness_metric_name)
             if self.fairness_metric_name == "disparate_impact":
                 fairness_metric = 1 - fairness_metric
                 best_metric_condition = fairness_metric > self.best_fairness_metric
                 target_metric_condition = fairness_metric >= self.target_fairness_metric
-
             else:
                 best_metric_condition = self.best_fairness_metric > fairness_metric
                 target_metric_condition = self.target_fairness_metric >= fairness_metric

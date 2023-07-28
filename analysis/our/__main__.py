@@ -1,13 +1,13 @@
-import os
-
 import pandas as pd
 from analysis import get_files_from_parameters, get_final_metrics_from_file
 from analysis.our import PATH as ANALYSIS_PATH
 from images.our import PATH as IMAGES_PATH
-from configuration import LAMBDAS, IDX_TO_NAME
+from configuration import IDX_TO_NAME, our_lambdas, IDXS, LOG
 from images import plot_fairness_metric
+from fairness.our import PATH as OUR_PATH
 
-IDXS = [0, 7, 8]
+OUR_PATH /= LOG
+
 CUSTOM_METRICS = ["demographic_parity"]
 FAIRNESS_METRIC_SHORT_NAMES = {
     "demographic_parity": "dp",
@@ -18,10 +18,10 @@ FAIRNESS_METRIC_SHORT_NAMES = {
 for CUSTOM_METRIC in CUSTOM_METRICS:
     for IDX in IDXS:
         accs, dps, dis, eos, lambdas, file_names = [], [], [], [], [], []
-        for LAMBDA in LAMBDAS:
+        for LAMBDA in our_lambdas(IDX):
             if LAMBDA == 1.0:
                 LAMBDA = 1
-            files = get_files_from_parameters(custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX)
+            files = get_files_from_parameters(path=OUR_PATH, custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX)
             for file in files:
                 loss, acc, dp, di, eo = get_final_metrics_from_file(file)
                 accs.append(acc)
