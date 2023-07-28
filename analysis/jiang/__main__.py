@@ -9,7 +9,6 @@ from images.jiang import PATH as IMAGES_PATH
 from analysis.jiang import PATH as ANALYSIS_PATH
 
 PATH = JIANG_PATH / LOG
-IDXS = [0, 7]
 FAIRNESS_METRIC_SHORT_NAMES = {
     "demographic_parity": "dp",
     "disparate_impact": "di",
@@ -19,7 +18,7 @@ FAIRNESS_METRIC_SHORT_NAMES = {
 for CUSTOM_METRIC in JIANG_METRICS:
     for IDX in IDXS:
         accs, dps, dis, eos, lambdas, file_names = [], [], [], [], [], []
-        for LAMBDA in JIANG_LAMBDAS:
+        for LAMBDA in jiang_lambdas(IDX):
             files = get_files_from_parameters(custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX, path=PATH)
             for file in files:
                 loss, acc, dp, di, eo = get_final_metrics_from_file(file)
@@ -29,7 +28,8 @@ for CUSTOM_METRIC in JIANG_METRICS:
                 eos.append(eo)
                 lambdas.append(LAMBDA)
                 file_names.append(file.name)
-                # os.remove(file)
+                # if IDX == 8:
+                    # os.remove(file)
         df = pd.DataFrame({"file name": file_names, "lambda": lambdas, "acc": accs, "dp": dps, "di": dis, "eo": eos})
         filename = f"{CUSTOM_METRIC}_{IDX_TO_NAME[IDX]}.csv"
         df.to_csv(ANALYSIS_PATH / filename, index=False)
