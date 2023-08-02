@@ -19,8 +19,6 @@ for CUSTOM_METRIC in CHO_METRICS:
     for IDX in IDXS:
         accs, dps, dis, eos, lambdas, file_names = [], [], [], [], [], []
         for LAMBDA in cho_lambdas(IDX):
-            if LAMBDA == 1.0:
-                LAMBDA = 1
             files = get_files_from_parameters(custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX, path=PATH)
             for file in files:
                 loss, acc, dp, di, eo = get_final_metrics_from_file(file)

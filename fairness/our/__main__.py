@@ -126,7 +126,7 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
     if metric is None:
         compute_experiments_given_lambda()
     else:
-        for l in our_lambdas(IDX):
+        for l in our_lambdas(IDX, metric):
             compute_experiments_given_lambda(l)
 
 

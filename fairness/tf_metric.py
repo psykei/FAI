@@ -94,8 +94,8 @@ def double_conditional_probability_in_range(predicted: tf.Tensor, protected: tf.
     """
     mask = tf.cond(
         tf.convert_to_tensor(inside),
-        tf.boolean_mask(predicted, tf.logical_and(tf.logical_and(tf.greater_equal(protected, min_value), tf.less(protected, max_value)), tf.equal(ground_truth, second_value))),
-        tf.boolean_mask(predicted, tf.logical_or(tf.logical_or(tf.less(protected, min_value), tf.greater_equal(protected, max_value)), tf.not_equal(ground_truth, second_value)))
+        lambda: tf.boolean_mask(predicted, tf.logical_and(tf.logical_and(tf.greater_equal(protected, min_value), tf.less(protected, max_value)), tf.equal(ground_truth, second_value))),
+        lambda: tf.boolean_mask(predicted, tf.logical_or(tf.logical_or(tf.less(protected, min_value), tf.greater_equal(protected, max_value)), tf.not_equal(ground_truth, second_value)))
     )
 
     return tf.cond(
@@ -230,8 +230,10 @@ def discrete_equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted: t
     masks_a_1 = tf.map_fn(lambda value: double_conditional_probability(predicted, protected, y[:, 0], value, 1), unique_protected)
     mask_0 = tf.math.reduce_mean(single_conditional_probability(predicted, y[:, 0], 0))
     mask_1 = tf.math.reduce_mean(single_conditional_probability(predicted, y[:, 0], 1))
-    number_of_samples_a_0 = tf.map_fn(lambda value: tf.reduce_sum(tf.logical_and(tf.equal(protected, value), tf.equal(y, 0))), unique_protected)
-    number_of_samples_a_1 = tf.map_fn(lambda value: tf.reduce_sum(tf.logical_and(tf.equal(protected, value), tf.equal(y, 1))), unique_protected)
+    y_0 = tf.equal(y, 0)
+    y_1 = tf.equal(y, 1)
+    number_of_samples_a_0 = tf.map_fn(lambda value: tf.reduce_sum(tf.cast(tf.logical_and(tf.equal(protected, value), y_0), tf.float32)), unique_protected)
+    number_of_samples_a_1 = tf.map_fn(lambda value: tf.reduce_sum(tf.cast(tf.logical_and(tf.equal(protected, value), y_1), tf.float32)), unique_protected)
     differences_0 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_0), masks_a_0)
     differences_0 = tf.math.multiply_no_nan(differences_0, number_of_samples_a_0)
     differences_1 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_1), masks_a_1)
@@ -262,12 +264,27 @@ def continuous_equalized_odds(index: int, x: tf.Tensor, y: tf.Tensor, predicted:
     masks_a_1 = tf.map_fn(lambda value: double_conditional_probability_in_range(predicted, protected, y[:, 0], value, value + step, 1), tf.range(min_protected, max_protected, step))
     mask_0 = tf.math.reduce_mean(single_conditional_probability_in_range(predicted, y[:, 0], 0, 1))
     mask_1 = tf.math.reduce_mean(single_conditional_probability_in_range(predicted, y[:, 0], 1, 1))
+    # number_of_samples_a = tf.map_fn(
+    #     lambda value: tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)),
+    #     tf.range(min_protected, max_protected, step),
+    #     dtype=tf.bool
+    # )
+    y_0 = tf.equal(y, 0)
+    y_1 = tf.equal(y, 1)
+    # number_of_samples_a_0 = tf.map_fn(
+    #     lambda value: tf.reduce_sum(tf.cast(tf.logical_and(tf.squeeze(value), y_0), tf.float32)),
+    #     number_of_samples_a
+    # )
+    # number_of_samples_a_1 = tf.map_fn(
+    #     lambda value: tf.reduce_sum(tf.cast(tf.logical_and(tf.squeeze(value), y_1), tf.float32)),
+    #     number_of_samples_a
+    # )
     number_of_samples_a_0 = tf.map_fn(
-        lambda value: tf.reduce_sum(tf.logical_and(tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)), tf.equal(y, 0))),
+        lambda value: tf.reduce_sum(tf.cast(tf.logical_and(tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)), y_0), tf.float32)),
         tf.range(min_protected, max_protected, step)
     )
     number_of_samples_a_1 = tf.map_fn(
-        lambda value: tf.reduce_sum(tf.logical_and(tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)), tf.equal(y, 1))),
+        lambda value: tf.reduce_sum(tf.cast(tf.logical_and(tf.logical_and(tf.greater_equal(protected, value), tf.less(protected, value + step)), y_1), tf.float32)),
         tf.range(min_protected, max_protected, step)
     )
     differences_0 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_0), masks_a_0)

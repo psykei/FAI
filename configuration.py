@@ -11,9 +11,9 @@ EPOCHS = 5000
 BATCH_SIZE = 500
 NEURONS_PER_LAYER = [100, 50]
 VERBOSE = 0
-IDXS = [0, 7, 8]  # index of the sensitive attribute [0 = age, 7 = ethnicity, 8 = sex,...]
+IDXS = [8, 7, 0]  # index of the sensitive attribute [0 = age, 7 = ethnicity, 8 = sex,...]
 # IDXS = [7]
-CUSTOM_METRICS = ["demographic_parity"]
+CUSTOM_METRICS = ["demographic_parity", "equalized_odds"]
 # CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 ONE_HOT = False
 IDX_TO_NAME = {
@@ -43,12 +43,19 @@ def generate_lambdas(max_lambda: float, steps: float, min_lambda: float = 0.):
 
 
 # Hyperparameters of our method
-OUR_MAX_LAMBDAS = [10, 3, 2]
-OUR_STEPS = [0.1, 0.02, 0.02]
+OUR_MAX_LAMBDAS_DP = [10, 100, 2]
+OUR_STEPS_DP = [0.1, 1, 0.02]
+OUR_MAX_LAMBDAS_EO = [10, 10, 10]
+OUR_STEPS_EO = [1, 1, 1]
 
 
-def our_lambdas(index: int):
-    return generate_lambdas(OUR_MAX_LAMBDAS[IDX_TO_IDX[index]], OUR_STEPS[IDX_TO_IDX[index]])
+def our_lambdas(index: int, metric: str = "demographic_parity"):
+    if metric == "demographic_parity":
+        return generate_lambdas(OUR_MAX_LAMBDAS_DP[IDX_TO_IDX[index]], OUR_STEPS_DP[IDX_TO_IDX[index]])
+    elif metric == "equalized_odds":
+        return generate_lambdas(OUR_MAX_LAMBDAS_EO[IDX_TO_IDX[index]], OUR_STEPS_EO[IDX_TO_IDX[index]])
+    else:
+        raise ValueError(f"Unknown metric: {metric}")
 
 
 # Cho's method configuration
@@ -56,8 +63,8 @@ def our_lambdas(index: int):
 CHO_H = 0.1
 CHO_DELTA = 1.0
 CHO_MAX_LAMBDAS = [1, 1, 1]
-CHO_MIN_LAMBDAS = [0, 0, 0.9]
-CHO_STEPS = [0.01, 0.01, 0.001]
+CHO_MIN_LAMBDAS = [0, 0.98, 0]
+CHO_STEPS = [0.01, 0.0005, 0.01]
 
 
 def cho_lambdas(index: int):
@@ -68,12 +75,13 @@ CHO_METRICS = ["demographic_parity"]
 # CHO_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 
 # Jiang's method configuration
-JIANG_MAX_LAMBDA = [100, 2, 3]
-JIANG_STEPS = [1, 0.02, 0.05]
+JIANG_MAX_LAMBDA = [100, 120, 3]
+JIANG_MIN_LAMBDAS = [0, 10, 0]
+JIANG_STEPS = [1, 1, 0.05]
 
 
 def jiang_lambdas(index: int):
-    return generate_lambdas(JIANG_MAX_LAMBDA[IDX_TO_IDX[index]], JIANG_STEPS[IDX_TO_IDX[index]])
+    return generate_lambdas(JIANG_MAX_LAMBDA[IDX_TO_IDX[index]], JIANG_STEPS[IDX_TO_IDX[index]], JIANG_MIN_LAMBDAS[IDX_TO_IDX[index]])
 
 
 JIANG_METRICS = ["demographic_parity"]

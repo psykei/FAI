@@ -8,7 +8,7 @@ from fairness.our import PATH as OUR_PATH
 
 OUR_PATH /= LOG
 
-CUSTOM_METRICS = ["demographic_parity"]
+CUSTOM_METRICS = ["demographic_parity", "equalized_odds"]
 FAIRNESS_METRIC_SHORT_NAMES = {
     "demographic_parity": "dp",
     "disparate_impact": "di",
@@ -18,7 +18,7 @@ FAIRNESS_METRIC_SHORT_NAMES = {
 for CUSTOM_METRIC in CUSTOM_METRICS:
     for IDX in IDXS:
         accs, dps, dis, eos, lambdas, file_names = [], [], [], [], [], []
-        for LAMBDA in our_lambdas(IDX):
+        for LAMBDA in our_lambdas(IDX, CUSTOM_METRIC):
             if LAMBDA == 1.0:
                 LAMBDA = 1
             files = get_files_from_parameters(path=OUR_PATH, custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX)
