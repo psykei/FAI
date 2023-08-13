@@ -8,7 +8,9 @@ DEFAULT_SEED = 0
 DEFAULT_TEST_SIZE = 0.2
 DEFAULT_VALIDATION_SIZE = 0.2
 DEFAULT_ADULT_TRAIN_SET_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"  # https://archive.ics.uci.edu/static/public/2/adult.zip
-DEFAULT_ADULT_TEST_SET_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"
+DEFAULT_ADULT_TEST_SET_URL = (
+    "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"
+)
 
 
 def _create_cache_directory():
@@ -26,7 +28,7 @@ class AdultLoader:
             df: pd.DataFrame,
             validation_size: float = DEFAULT_VALIDATION_SIZE,
             test_size: float = DEFAULT_TEST_SIZE,
-            validation: bool = True
+            validation: bool = True,
         ) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
             train_df, test_df = train_test_split(
                 df, test_size=test_size, stratify=df["income"], random_state=self.seed
@@ -42,7 +44,13 @@ class AdultLoader:
                 )
                 return train_df, val_df, test_df
 
-        def setup(self, df: pd.DataFrame, one_hot: bool = True, preprocess: bool = True, min_max: bool = False) -> pd.DataFrame:
+        def setup(
+            self,
+            df: pd.DataFrame,
+            one_hot: bool = True,
+            preprocess: bool = True,
+            min_max: bool = False,
+        ) -> pd.DataFrame:
             df.income = df.income.apply(
                 lambda x: 0 if x.replace(" ", "") in ("<=50K", "<=50K.") else 1
             )
@@ -50,7 +58,9 @@ class AdultLoader:
                 df.drop([column], axis=1, inplace=True)
             if one_hot:
                 for column in AdultLoader.categorical:
-                    df = pd.concat([df, pd.get_dummies(df[column], prefix=column)], axis=1)
+                    df = pd.concat(
+                        [df, pd.get_dummies(df[column], prefix=column)], axis=1
+                    )
                     df.drop([column], axis=1, inplace=True)
             else:
                 for column in AdultLoader.categorical:
@@ -121,14 +131,24 @@ class AdultLoader:
         result = pd.concat([df_train, df_test], axis=0)
         return result
 
-    def load_preprocessed(self, all_datasets: bool = False, one_hot: bool = True, preprocess: bool = True, min_max: bool = False) -> pd.DataFrame:
+    def load_preprocessed(
+        self,
+        all_datasets: bool = False,
+        one_hot: bool = True,
+        preprocess: bool = True,
+        min_max: bool = False,
+    ) -> pd.DataFrame:
         if all_datasets:
             df = self.load_all()
         else:
             df = self.load()
-        return self.processor.setup(df, one_hot=one_hot, preprocess=preprocess, min_max=min_max)
+        return self.processor.setup(
+            df, one_hot=one_hot, preprocess=preprocess, min_max=min_max
+        )
 
-    def load_preprocessed_split(self, validation: bool = True, all_datasets: bool = False, one_hot: bool = True) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
+    def load_preprocessed_split(
+        self, validation: bool = True, all_datasets: bool = False, one_hot: bool = True
+    ) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
         if all_datasets:
             df = self.load_preprocessed(all_datasets=True, one_hot=one_hot)
         else:

@@ -1,5 +1,8 @@
+import gc
 import hashlib
 import os
+from typing import Callable
+
 from configuration import *
 import tensorflow as tf
 from tensorflow.python.compat.v2_compat import disable_v2_behavior
@@ -10,8 +13,14 @@ from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tqdm.keras import TqdmCallback
 from fairness import enable_logging, logger, disable_file_logging
 from fairness.metric import demographic_parity, equalized_odds, disparate_impact
-from fairness.tf_metric import continuous_demographic_parity, continuous_disparate_impact, continuous_equalized_odds, \
-    discrete_demographic_parity, discrete_equalized_odds, discrete_disparate_impact
+from fairness.tf_metric import (
+    continuous_demographic_parity,
+    continuous_disparate_impact,
+    continuous_equalized_odds,
+    discrete_demographic_parity,
+    discrete_equalized_odds,
+    discrete_disparate_impact,
+)
 from utils import create_fully_connected_nn, Conditions
 import numpy as np
 from fairness.our import PATH as FAIRNESS_PATH
@@ -27,15 +36,37 @@ def cost_combiner(first_cost: tf.Tensor, second_cost: tf.Tensor) -> tf.Tensor:
 
 
 def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
-
     def compute_experiments_given_lambda(l: float = 1.0):
         continuous = True if IDX == 0 else False
-        idf = '_'.join([str(x) for x in [SEED, K, EPOCHS, BATCH_SIZE, NEURONS_PER_LAYER, IDX, metric, l]])
+        idf = "_".join(
+            [
+                str(x)
+                for x in [
+                    SEED,
+                    K,
+                    EPOCHS,
+                    BATCH_SIZE,
+                    NEURONS_PER_LAYER,
+                    IDX,
+                    metric,
+                    l,
+                ]
+            ]
+        )
         if not ONE_HOT:
             idf += "_" + str(ONE_HOT)
-        filename = str(FAIRNESS_PATH) + os.sep + LOG + os.sep + hashlib.md5(str(idf).encode()).hexdigest() + ".txt"
+        filename = (
+            str(FAIRNESS_PATH)
+            + os.sep
+            + LOG
+            + os.sep
+            + hashlib.md5(str(idf).encode()).hexdigest()
+            + ".txt"
+        )
         if not os.path.exists(filename):
-            dataset, train, test, kfold = initialize_experiment(filename, metric, IDX, l)
+            dataset, train, test, kfold = initialize_experiment(
+                filename, metric, IDX, l
+            )
             l_tf = tf.constant(l, dtype=tf.float32)
 
             mean_accuracy = 0
@@ -49,19 +80,13 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
                 valid_x, valid_y = valid.drop("income", axis=1), valid["income"]
                 np.random.seed(SEED + fold)
                 set_seed(SEED + fold)
-                model = create_fully_connected_nn(train.shape[1] - 1, 1, NEURONS_PER_LAYER)
+                model = create_fully_connected_nn(
+                    train.shape[1] - 1, 1, NEURONS_PER_LAYER
+                )
                 x = model.layers[0].input
 
-                if metric == "demographic_parity":
-                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * continuous_demographic_parity(IDX, x, y_pred))
-                elif metric == "disparate_impact":
-                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * continuous_disparate_impact(IDX, x, y_pred))
-                elif metric == "equalized_odds":
-                    custom_loss = lambda y_true, y_pred: cost_combiner(binary_crossentropy(y_true, y_pred), l_tf * continuous_equalized_odds(IDX, x, y_true, y_pred))
-                else:
-                    custom_loss = binary_crossentropy
-
                 if continuous:
+
                     def tf_demographic_parity(y_true, y_pred):
                         return continuous_demographic_parity(IDX, x, y_pred)
 
@@ -70,7 +95,9 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
 
                     def tf_equalized_odds(y_true, y_pred):
                         return continuous_equalized_odds(IDX, x, y_true, y_pred)
+
                 else:
+
                     def tf_demographic_parity(y_true, y_pred):
                         return discrete_demographic_parity(IDX, x, y_pred)
 
@@ -88,15 +115,38 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
                 elif metric == "equalized_odds":
                     fairness_metric = tf_equalized_odds
 
-                metrics = [
-                    "accuracy",
-                    fairness_metric
-                ]
-                target_fairness_metric = TARGET_FAIRNESS_METRIC if metric == "demographic_parity" else TARGET_DISPARATE_IMPACT
-                early_stopping = Conditions(fairness_metric_name=metric, target_accuracy=TARGET_ACCURACY, target_fairness_metric=target_fairness_metric)
+                custom_loss: Callable = lambda y_true, y_pred: cost_combiner(
+                    binary_crossentropy(y_true, y_pred),
+                    l_tf * fairness_metric(y_true, y_pred),
+                )
+                if metric not in [
+                    "demographic_parity",
+                    "disparate_impact",
+                    "equalized_odds",
+                ]:
+                    custom_loss = binary_crossentropy
+
+                metrics = ["accuracy", fairness_metric]
+                target_fairness_metric = (
+                    TARGET_FAIRNESS_METRIC
+                    if metric == "demographic_parity"
+                    else TARGET_DISPARATE_IMPACT
+                )
+                early_stopping = Conditions(
+                    fairness_metric_name=metric,
+                    target_accuracy=TARGET_ACCURACY,
+                    target_fairness_metric=target_fairness_metric,
+                )
                 model.compile(optimizer=Adam(), loss=custom_loss, metrics=metrics)
-                model.fit(train.iloc[:, :-1], train.iloc[:, -1], epochs=EPOCHS, batch_size=BATCH_SIZE, verbose=VERBOSE,
-                          validation_data=(valid_x, valid_y),callbacks=[TqdmCallback(verbose=VERBOSE), early_stopping])
+                model.fit(
+                    train.iloc[:, :-1],
+                    train.iloc[:, -1],
+                    epochs=EPOCHS,
+                    batch_size=BATCH_SIZE,
+                    verbose=VERBOSE,
+                    validation_data=(valid_x, valid_y),
+                    callbacks=[TqdmCallback(verbose=VERBOSE), early_stopping],
+                )
                 # loss, accuracy, _, = model.evaluate(test.iloc[:, :-1], test.iloc[:, -1], verbose=VERBOSE)
                 # logger.info(f"Test loss: {loss:.4f}")
                 predictions = np.squeeze(np.round(model.predict(test.iloc[:, :-1])))
@@ -104,9 +154,31 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
                 logger.info(f"Test accuracy: {accuracy:.4f}")
                 # mean_loss += loss
                 mean_accuracy += accuracy
-                mean_demographic_parity += demographic_parity(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
-                mean_disparate_impact += disparate_impact(test.iloc[:, IDX].to_numpy(), predictions, numeric=True, continuous=continuous)
-                mean_equalized_odds += equalized_odds(test.iloc[:, IDX].to_numpy(), test.iloc[:, -1].to_numpy(), predictions, numeric=True, continuous=continuous)
+                mean_demographic_parity += demographic_parity(
+                    test.iloc[:, IDX].to_numpy(),
+                    predictions,
+                    numeric=True,
+                    continuous=continuous,
+                )
+                mean_disparate_impact += disparate_impact(
+                    test.iloc[:, IDX].to_numpy(),
+                    predictions,
+                    numeric=True,
+                    continuous=continuous,
+                )
+                mean_equalized_odds += equalized_odds(
+                    test.iloc[:, IDX].to_numpy(),
+                    test.iloc[:, -1].to_numpy(),
+                    predictions,
+                    numeric=True,
+                    continuous=continuous,
+                )
+                del fairness_metric
+                del custom_loss
+                del metrics
+                del early_stopping
+                del model
+                gc.collect()
                 # sleep(60*2)
             # mean_loss /= K
             mean_accuracy /= K
@@ -121,7 +193,11 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
             disable_file_logging()
         else:
             enable_logging()
-            logger.info("Experiment already executed! It is available in the file: " + filename + ".")
+            logger.info(
+                "Experiment already executed! It is available in the file: "
+                + filename
+                + "."
+            )
 
     if metric is None:
         compute_experiments_given_lambda()

@@ -48,7 +48,9 @@ def is_batch_size_equal(file: Path, batch_size: int) -> bool:
 def is_neurons_per_layer_equal(file: Path, neurons_per_layer: list[int]) -> bool:
     with open(file, "r") as f:
         lines = f.readlines()
-        return lines[NEURONS_PER_LAYER_ROW].split("=")[1].strip() == str(neurons_per_layer)
+        return lines[NEURONS_PER_LAYER_ROW].split("=")[1].strip() == str(
+            neurons_per_layer
+        )
 
 
 def is_idx_equal(file: Path, idx: int) -> bool:
@@ -86,18 +88,37 @@ def is_complete(file: Path) -> bool:
         return condition
 
 
-def get_files_from_parameters(custom_metric: str = "None", path = LOG_PATH, l: float = 1, batch_size: int = 500, epochs: int = 5000,
-                              neurons_per_layer=None, seed: int = 0, k: int = 5, idx: int = 3) -> list[Path]:
+def get_files_from_parameters(
+    custom_metric: str = "None",
+    path=LOG_PATH,
+    l: float = 1,
+    batch_size: int = 500,
+    epochs: int = 5000,
+    neurons_per_layer=None,
+    seed: int = 0,
+    k: int = 5,
+    idx: int = 3,
+) -> list[Path]:
     if neurons_per_layer is None:
         neurons_per_layer = [100, 50]
     experiment_log_files = get_list_of_files(path)
     experiment_log_files = [f for f in experiment_log_files if is_seed_equal(f, seed)]
     experiment_log_files = [f for f in experiment_log_files if is_k_equal(f, k)]
-    experiment_log_files = [f for f in experiment_log_files if is_epochs_equal(f, epochs)]
-    experiment_log_files = [f for f in experiment_log_files if is_batch_size_equal(f, batch_size)]
-    experiment_log_files = [f for f in experiment_log_files if is_neurons_per_layer_equal(f, neurons_per_layer)]
+    experiment_log_files = [
+        f for f in experiment_log_files if is_epochs_equal(f, epochs)
+    ]
+    experiment_log_files = [
+        f for f in experiment_log_files if is_batch_size_equal(f, batch_size)
+    ]
+    experiment_log_files = [
+        f
+        for f in experiment_log_files
+        if is_neurons_per_layer_equal(f, neurons_per_layer)
+    ]
     experiment_log_files = [f for f in experiment_log_files if is_idx_equal(f, idx)]
-    experiment_log_files = [f for f in experiment_log_files if is_custom_metric_equal(f, custom_metric)]
+    experiment_log_files = [
+        f for f in experiment_log_files if is_custom_metric_equal(f, custom_metric)
+    ]
     experiment_log_files = [f for f in experiment_log_files if is_lambda_equal(f, l)]
     experiment_log_files = [f for f in experiment_log_files if is_complete(f)]
     return experiment_log_files
@@ -108,5 +129,5 @@ def get_final_metrics_from_file(file: Path):
         lines = f.readlines()
         results = []
         for i in range(0, 5):
-            results.append(float(lines[i-5].split(":")[1]))
+            results.append(float(lines[i - 5].split(":")[1]))
         return results
