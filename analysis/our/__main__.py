@@ -4,14 +4,12 @@ import pandas as pd
 from analysis import get_files_from_parameters, get_final_metrics_from_file
 from analysis.our import PATH as ANALYSIS_PATH
 from images.our import PATH as IMAGES_PATH
-from configuration import IDX_TO_NAME, our_lambdas, IDXS, LOG
+from configuration import IDX_TO_NAME, our_lambdas, IDXS, LOG, CUSTOM_METRICS
 from images import plot_fairness_metric
 from fairness.our import PATH as OUR_PATH
 
 OUR_PATH /= LOG
 
-CUSTOM_METRICS = ["disparate_impact"]
-# CUSTOM_METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 FAIRNESS_METRIC_SHORT_NAMES = {
     "demographic_parity": "dp",
     "disparate_impact": "di",

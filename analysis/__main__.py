@@ -7,7 +7,6 @@ from analysis.jiang import PATH as JIANG_ANALYSIS_PATH
 
 METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 IDXS = [0, 7, 8]
-# METRICS = ["demographic_parity", "disparate_impact", "equalized_odds"]
 DATA_PATHS = [CHO_ANALYSIS_PATH, OUR_ANALYSIS_PATH, JIANG_ANALYSIS_PATH]
 METHOD_NAMES = ["Cho", "Our", "Jiang"]
 COLORS = ["#09B5E6", "#E63F14", "#20E635"]
