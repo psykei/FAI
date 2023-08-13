@@ -27,7 +27,6 @@ class Conditions(Callback):
                  target_fairness_metric: float = 0.01):
         super().__init__()
         self.patience = patience
-        self.long_patience = patience * 2
         self.target_accuracy = target_accuracy
         self.fairness_metric_name = fairness_metric_name
         self.target_fairness_metric = target_fairness_metric

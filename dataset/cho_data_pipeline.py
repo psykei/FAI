@@ -5,7 +5,12 @@ from sklearn.preprocessing import StandardScaler
 
 
 def arrays_to_tensor(X, Y, Z, XZ, device):
-    return torch.FloatTensor(X).to(device), torch.FloatTensor(Y).to(device), torch.FloatTensor(Z).to(device), torch.FloatTensor(XZ).to(device)
+    return (
+        torch.FloatTensor(X).to(device),
+        torch.FloatTensor(Y).to(device),
+        torch.FloatTensor(Z).to(device),
+        torch.FloatTensor(XZ).to(device),
+    )
 
 
 class CustomDataset:
@@ -23,8 +28,13 @@ class CustomDataset:
 
 
 class FairnessChoDataset:
-
-    def __init__(self, train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame, device=torch.device('cpu')):
+    def __init__(
+        self,
+        train: pd.DataFrame,
+        val: pd.DataFrame,
+        test: pd.DataFrame,
+        device=torch.device("cpu"),
+    ):
         self.device = device
         self.sensitive_attrs = None
         self.Z_train = None
@@ -41,7 +51,6 @@ class FairnessChoDataset:
         self.Y_test = test.iloc[:, -1]
 
     def prepare_ndarray(self, idx: int = 0):
-
         def _(x, y) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
             z = x.iloc[:, idx].to_numpy(dtype=np.float64)
             x = x.drop(x.columns[idx], axis=1).to_numpy(dtype=np.float64)
@@ -49,9 +58,13 @@ class FairnessChoDataset:
             xz = np.concatenate([x, z.reshape(-1, 1)], axis=1)
             return x, y, z, xz
 
-        self.X_train, self.Y_train, self.Z_train, self.XZ_train = _(self.X_train, self.Y_train)
+        self.X_train, self.Y_train, self.Z_train, self.XZ_train = _(
+            self.X_train, self.Y_train
+        )
         self.X_val, self.Y_val, self.Z_val, self.XZ_val = _(self.X_val, self.Y_val)
-        self.X_test, self.Y_test, self.Z_test, self.XZ_test = _(self.X_test, self.Y_test)
+        self.X_test, self.Y_test, self.Z_test, self.XZ_test = _(
+            self.X_test, self.Y_test
+        )
         self.sensitive_attrs = sorted(list(set(self.Z_train)))
 
         # Scale
@@ -66,17 +79,24 @@ class FairnessChoDataset:
         self.X_test = scaler_X.transform(self.X_test)
 
     def get_dataset_in_ndarray(self):
-        return (self.X_train, self.Y_train, self.Z_train, self.XZ_train), \
-            (self.X_val, self.Y_val, self.Z_val, self.XZ_val), \
-            (self.X_test, self.Y_test, self.Z_test, self.XZ_test)
+        return (
+            (self.X_train, self.Y_train, self.Z_train, self.XZ_train),
+            (self.X_val, self.Y_val, self.Z_val, self.XZ_val),
+            (self.X_test, self.Y_test, self.Z_test, self.XZ_test),
+        )
 
     def get_dataset_in_tensor(self):
         x_train, y_train, z_train, xz_train = arrays_to_tensor(
-            self.X_train, self.Y_train, self.Z_train, self.XZ_train, self.device)
+            self.X_train, self.Y_train, self.Z_train, self.XZ_train, self.device
+        )
         x_val, y_val, z_val, xz_val = arrays_to_tensor(
-            self.X_val, self.Y_val, self.Z_val, self.XZ_val, self.device)
+            self.X_val, self.Y_val, self.Z_val, self.XZ_val, self.device
+        )
         x_test, y_test, z_test, xz_test = arrays_to_tensor(
-            self.X_test, self.Y_test, self.Z_test, self.XZ_test, self.device)
-        return (x_train, y_train, z_train, xz_train), \
-            (x_val, y_val, z_val, xz_val), \
-            (x_test, y_test, z_test, xz_test)
+            self.X_test, self.Y_test, self.Z_test, self.XZ_test, self.device
+        )
+        return (
+            (x_train, y_train, z_train, xz_train),
+            (x_val, y_val, z_val, xz_val),
+            (x_test, y_test, z_test, xz_test),
+        )

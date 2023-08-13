@@ -19,15 +19,42 @@ for IDX in IDXS:
     # CONTINUOUS = False
     for metric in CHO_METRICS:
         for JIANG_LAMBDA in jiang_lambdas(IDX):
-            idf = '_'.join([str(x) for x in [SEED, K, EPOCHS, BATCH_SIZE, NEURONS_PER_LAYER, IDX, metric, JIANG_LAMBDA]])
+            idf = "_".join(
+                [
+                    str(x)
+                    for x in [
+                        SEED,
+                        K,
+                        EPOCHS,
+                        BATCH_SIZE,
+                        NEURONS_PER_LAYER,
+                        IDX,
+                        metric,
+                        JIANG_LAMBDA,
+                    ]
+                ]
+            )
             if not ONE_HOT:
                 idf += "_" + str(ONE_HOT)
-            filename = str(JIANG_PATH) + os.sep + LOG + os.sep + hashlib.md5(str(idf).encode()).hexdigest() + ".txt"
+            filename = (
+                str(JIANG_PATH)
+                + os.sep
+                + LOG
+                + os.sep
+                + hashlib.md5(str(idf).encode()).hexdigest()
+                + ".txt"
+            )
             if not os.path.exists(filename):
-                dataset, train, test, kfold = initialize_experiment(filename, metric, IDX, JIANG_LAMBDA, preprocess=True, min_max=True)
-                mean_accuracy, mean_demographic_parity, mean_disparate_impact, mean_equalized_odds = 0, 0, 0, 0
+                dataset, train, test, kfold = initialize_experiment(
+                    filename, metric, IDX, JIANG_LAMBDA, preprocess=True, min_max=True
+                )
+                (
+                    mean_accuracy,
+                    mean_demographic_parity,
+                    mean_disparate_impact,
+                    mean_equalized_odds,
+                ) = (0, 0, 0, 0)
                 for fold, (train_idx, valid_idx) in enumerate(kfold.split(train)):
-
                     # Set a seed for random number generation
                     random.seed(SEED)
                     np.random.seed(SEED)
@@ -43,7 +70,9 @@ for IDX in IDXS:
                     input_dim = fairness_dataset.XZ_train.shape[1]
 
                     # Create a classifier model
-                    net = Classifier(n_layers=2, n_inputs=input_dim, n_hidden_units=NEURONS_PER_LAYER)
+                    net = Classifier(
+                        n_layers=2, n_inputs=input_dim, n_hidden_units=NEURONS_PER_LAYER
+                    )
                     net = net.to(DEVICE)
 
                     # Set an optimizer
@@ -56,13 +85,33 @@ for IDX in IDXS:
                     penalty = KDE_FAIR.forward
 
                     # Fair classifier training
-                    train_datasets, valid_datasets, test_datasets = fairness_dataset.get_dataset_in_tensor()
+                    (
+                        train_datasets,
+                        valid_datasets,
+                        test_datasets,
+                    ) = fairness_dataset.get_dataset_in_tensor()
                     _, y_train, z_train, x_train = train_datasets
                     _, y_valid, z_valid, x_valid = valid_datasets
                     _, y_test, z_test, x_test = test_datasets
                     train_dataset = TensorDataset(x_train, y_train, z_train)
-                    dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-                    y_pred = regularized_learning(dataloader, x_valid, y_valid, z_valid, x_test, y_test, z_test, net, penalty, DEVICE, JIANG_LAMBDA, DATA_LOSS, EPOCHS)
+                    dataloader = DataLoader(
+                        train_dataset, batch_size=BATCH_SIZE, shuffle=True
+                    )
+                    y_pred = regularized_learning(
+                        dataloader,
+                        x_valid,
+                        y_valid,
+                        z_valid,
+                        x_test,
+                        y_test,
+                        z_test,
+                        net,
+                        penalty,
+                        DEVICE,
+                        JIANG_LAMBDA,
+                        DATA_LOSS,
+                        EPOCHS,
+                    )
 
                     # Compute metrics
                     # Round to the nearest integer
@@ -71,9 +120,18 @@ for IDX in IDXS:
                     logger.info(f"Test accuracy: {accuracy:.4f}")
                     y_pred = y_pred.detach().cpu().numpy()
                     mean_accuracy += accuracy
-                    mean_demographic_parity += demographic_parity(fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS)
-                    mean_disparate_impact += disparate_impact(fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS)
-                    mean_equalized_odds += equalized_odds(fairness_dataset.Z_test, fairness_dataset.Y_test, y_pred, continuous=CONTINUOUS)
+                    mean_demographic_parity += demographic_parity(
+                        fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS
+                    )
+                    mean_disparate_impact += disparate_impact(
+                        fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS
+                    )
+                    mean_equalized_odds += equalized_odds(
+                        fairness_dataset.Z_test,
+                        fairness_dataset.Y_test,
+                        y_pred,
+                        continuous=CONTINUOUS,
+                    )
 
                 mean_accuracy /= K
                 mean_demographic_parity /= K
