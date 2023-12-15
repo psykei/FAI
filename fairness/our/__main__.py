@@ -70,6 +70,9 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
             l_tf = tf.constant(l, dtype=tf.float32)
 
             mean_accuracy = 0
+            mean_precision = 0
+            mean_recall = 0
+            mean_f1 = 0
             mean_demographic_parity = 0
             mean_disparate_impact = 0
             mean_equalized_odds = 0
@@ -88,24 +91,24 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
                 if continuous:
 
                     def tf_demographic_parity(y_true, y_pred):
-                        return continuous_demographic_parity(IDX, x, y_pred)
+                        return continuous_demographic_parity(x[:, IDX], y_pred)
 
                     def tf_disparate_impact(y_true, y_pred):
-                        return continuous_disparate_impact(IDX, x, y_pred)
+                        return continuous_disparate_impact(x[:, IDX], y_pred)
 
                     def tf_equalized_odds(y_true, y_pred):
-                        return continuous_equalized_odds(IDX, x, y_true, y_pred)
+                        return continuous_equalized_odds(x[:, IDX], y_true, y_pred)
 
                 else:
 
                     def tf_demographic_parity(y_true, y_pred):
-                        return discrete_demographic_parity(IDX, x, y_pred)
+                        return discrete_demographic_parity(x[:, IDX], y_pred)
 
                     def tf_disparate_impact(y_true, y_pred):
-                        return discrete_disparate_impact(IDX, x, y_pred)
+                        return discrete_disparate_impact(x[:, IDX], y_pred)
 
                     def tf_equalized_odds(y_true, y_pred):
-                        return discrete_equalized_odds(IDX, x, y_true, y_pred)
+                        return discrete_equalized_odds(x[:, IDX], y_true, y_pred)
 
                 fairness_metric = tf_demographic_parity
                 if metric == "demographic_parity":
@@ -150,10 +153,23 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
                 # loss, accuracy, _, = model.evaluate(test.iloc[:, :-1], test.iloc[:, -1], verbose=VERBOSE)
                 # logger.info(f"Test loss: {loss:.4f}")
                 predictions = np.squeeze(np.round(model.predict(test.iloc[:, :-1])))
-                accuracy = np.mean(predictions == test.iloc[:, -1].to_numpy())
+                tp = np.sum(np.logical_and(predictions == 1, test.iloc[:, -1].to_numpy() == 1))
+                tn = np.sum(np.logical_and(predictions == 0, test.iloc[:, -1].to_numpy() == 0))
+                fp = np.sum(np.logical_and(predictions == 1, test.iloc[:, -1].to_numpy() == 0))
+                fn = np.sum(np.logical_and(predictions == 0, test.iloc[:, -1].to_numpy() == 1))
+                accuracy = (tp + tn) / (tp + tn + fp + fn)
+                precision = tp / (tp + fp) if tp + fp > 0 else 0
+                recall = tp / (tp + fn) if tp + fn > 0 else 0
+                f1 = 2 * (precision * recall) / (precision + recall) if precision + recall > 0 else 0
                 logger.info(f"Test accuracy: {accuracy:.4f}")
+                logger.info(f"Test precision: {precision:.4f}")
+                logger.info(f"Test recall: {recall:.4f}")
+                logger.info(f"Test f1: {f1:.4f}")
                 # mean_loss += loss
                 mean_accuracy += accuracy
+                mean_precision += precision
+                mean_recall += recall
+                mean_f1 += f1
                 mean_demographic_parity += demographic_parity(
                     test.iloc[:, IDX].to_numpy(),
                     predictions,
@@ -182,11 +198,17 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
                 # sleep(60*2)
             # mean_loss /= K
             mean_accuracy /= K
+            mean_precision /= K
+            mean_recall /= K
+            mean_f1 /= K
             mean_demographic_parity /= K
             mean_disparate_impact /= K
             mean_equalized_odds /= K
             # logger.info(f"Mean test loss: {mean_loss:.4f}")
             logger.info(f"Mean test accuracy: {mean_accuracy:.4f}")
+            logger.info(f"Mean test precision: {mean_precision:.4f}")
+            logger.info(f"Mean test recall: {mean_recall:.4f}")
+            logger.info(f"Mean test f1: {mean_f1:.4f}")
             logger.info(f"Mean demographic parity: {mean_demographic_parity:.4f}")
             logger.info(f"Mean disparate impact: {mean_disparate_impact:.4f}")
             logger.info(f"Mean equalized odds: {mean_equalized_odds:.4f}")

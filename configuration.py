@@ -42,15 +42,15 @@ def generate_lambdas(max_lambda: float, steps: float, min_lambda: float = 0.):
 
 
 # Hyperparameters of our method
-OUR_MAX_LAMBDAS_DP = [10, 100, 4]
+OUR_MAX_LAMBDAS_DP = [5, 5, 5]
 OUR_MIN_LAMBDAS_DP = [0, 0, 0]
-OUR_STEPS_DP = [0.1, 1, 0.04]
+OUR_STEPS_DP = [0.1, 0.1, 0.1]
 
-OUR_MAX_LAMBDAS_DI = [0.5, 0.1, 0.3]
+OUR_MAX_LAMBDAS_DI = [0.5, 0.1, 0.5]
 OUR_MIN_LAMBDAS_DI = [0, 0, 0]
-OUR_STEPS_DI = [0.01, 0.001, 0.01]
+OUR_STEPS_DI = [0.01, 0.05, 0.01]
 
-OUR_MAX_LAMBDAS_EO = [5, 3, 12]
+OUR_MAX_LAMBDAS_EO = [5, 5, 5]
 OUR_MIN_LAMBDAS_EO = [0, 0, 0]
 OUR_STEPS_EO = [0.1, 0.1, 0.1]
 

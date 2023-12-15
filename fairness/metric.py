@@ -1,9 +1,18 @@
 import numpy as np
-import fairness
 
 EPSILON: float = 1e-2
 DELTA: float = 1e-2
 DISPARATE_IMPACT_THRESHOLD: float = 0.8
+
+
+class Strategy:
+    """
+    The strategy to use when comparing the predicted output distribution with the protected attribute.
+    """
+
+    EQUAL = 0
+    GREATER_THAN = 1
+    LESS_THAN = 2
 
 
 def single_conditional_probability(
@@ -52,6 +61,7 @@ def demographic_parity(
     continuous: bool = False,
     numeric: bool = True,
     delta: float = DELTA,
+    strategy: int = Strategy.EQUAL,
 ) -> bool or float:
     """
     Demographic parity is a measure of fairness that measures if a value of a protected feature impacts the outcome of a
@@ -64,6 +74,7 @@ def demographic_parity(
     :param delta: approximation parameter for the calculus of continuous demographic parity
     :param continuous: if True, calculate the continuous demographic parity
     :param numeric: if True, return the value of demographic parity instead of a boolean
+    :param strategy: the strategy to use for the calculation of demographic parity
     :return: True if demographic parity is less than epsilon, False otherwise
     """
     absolute_probability = np.mean(y)
@@ -97,12 +108,19 @@ def demographic_parity(
             if conditional_probability == 0:
                 continue
             number_of_sample = np.sum(p == p_value)
-            parity += (
-                np.abs(conditional_probability - absolute_probability)
-                * number_of_sample
-            )
-        parity /= len(p)
-    fairness.logger.info(f"Demographic parity: {parity:.4f}")
+
+            if strategy == Strategy.EQUAL:
+                parity += np.abs(conditional_probability - absolute_probability) / len(unique_p)
+            elif strategy == Strategy.FREQUENCY:
+                parity += (
+                    np.abs(conditional_probability - absolute_probability)
+                    * number_of_sample / len(p)
+                )
+            elif strategy == Strategy.INVERSE_FREQUENCY:
+                parity += (
+                    np.abs(conditional_probability - absolute_probability)
+                    * ((1 - (number_of_sample / len(p))) / (len(unique_p) - 1))
+                )
     return parity < epsilon if not numeric else parity
 
 
@@ -113,7 +131,8 @@ def disparate_impact(
     continuous: bool = False,
     numeric: bool = True,
     delta: float = DELTA,
-) -> bool:
+    strategy: int = Strategy.EQUAL,
+) -> bool or float:
     """
     Disparate impact is a measure of fairness that measures if a protected feature impacts the outcome of a prediction.
     It has been defined on binary classification problems as the ratio of the probability of a positive outcome given
@@ -127,6 +146,7 @@ def disparate_impact(
     :param continuous: if True, calculate the continuous disparate impact
     :param numeric: if True, return the value of disparate impact instead of a boolean
     :param delta: approximation parameter for the calculus of continuous disparate impact
+    :param strategy: the strategy to use for the calculation of disparate impact
     :return: True if disparate impact is less than threshold, False otherwise
     """
     unique_protected = np.unique(p)
@@ -156,8 +176,14 @@ def disparate_impact(
                 number_of_sample = np.sum(np.logical_and(p >= min_value, p < max_value))
                 ratio = conditional_probability_in / conditional_probability_out
                 inverse_ratio = conditional_probability_out / conditional_probability_in
-                result += min(ratio, inverse_ratio) * number_of_sample
-        return result / len(p)
+
+                if strategy == Strategy.EQUAL:
+                    result += min(ratio, inverse_ratio) / len(unique_protected)
+                elif strategy == Strategy.FREQUENCY:
+                    result += min(ratio, inverse_ratio) * number_of_sample / len(p)
+                elif strategy == Strategy.INVERSE_FREQUENCY:
+                    result += min(ratio, inverse_ratio) * ((1 - (number_of_sample / len(p))) / (len(unique_protected) - 1))
+        return result
 
     if continuous:
         impact = _continuous_disparate_impact()
@@ -171,7 +197,6 @@ def disparate_impact(
             np.min(np.vstack((first_impact, second_impact)), axis=0) * number_of_samples
         )
         impact = np.sum(pair_wise_weighted_min) / len(p)
-    fairness.logger.info(f"Disparate impact: {impact:.4f}")
     return impact > threshold if not numeric else impact
 
 
@@ -182,7 +207,8 @@ def equalized_odds(
     epsilon: float = EPSILON,
     continuous: bool = False,
     numeric: bool = True,
-) -> bool:
+    strategy: int = Strategy.EQUAL,
+) -> bool or float:
     """
     Equalized odds is a measure of fairness that measures if the output is independent of the protected feature given
     the label Y.
@@ -192,7 +218,9 @@ def equalized_odds(
     :param y_true: ground truth
     :param y_pred: prediction
     :param epsilon: threshold for equalized odds
+    :param continuous: if True, calculate the continuous equalized odds
     :param numeric: if True, return the value of equalized odds instead of a boolean
+    :param strategy: the strategy to use for the calculation of equalized odds
     :return: True if equalized odds is satisfied, False otherwise
     """
     conditional_prob_zero = np.mean(y_pred[y_true == 0])
@@ -273,6 +301,12 @@ def equalized_odds(
             )
         )
         eo = np.nan_to_num(eo)
-        eo = np.sum(eo * number_of_samples) / np.sum(number_of_samples)
-    fairness.logger.info(f"Equalized odds: {eo:.4f}")
+
+        if strategy == Strategy.EQUAL:
+            eo = np.sum(eo) / len(y_true)
+        elif strategy == Strategy.FREQUENCY:
+            eo = np.sum(eo * number_of_samples) / np.sum(number_of_samples)
+        elif strategy == Strategy.INVERSE_FREQUENCY:
+            eo = np.sum(eo * (1 - (number_of_samples / len(p))) / (len(unique_protected) - 1))
     return eo < epsilon if not numeric else eo
+

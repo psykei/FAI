@@ -128,6 +128,6 @@ def get_final_metrics_from_file(file: Path):
     with open(file, "r") as f:
         lines = f.readlines()
         results = []
-        for i in range(0, 5):
-            results.append(float(lines[i - 5].split(":")[1]))
+        for i in range(0, 8):
+            results.append(float(lines[i - 8].split(":")[1]))
         return results
