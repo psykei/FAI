@@ -415,7 +415,7 @@ def continuous_equalized_odds(
     min_protected = tf.math.reduce_min(unique_protected)
     max_protected = tf.math.reduce_max(unique_protected)
     interval = max_protected - min_protected
-    step = tf.cast(interval * delta, tf.int32)
+    step = tf.cast(interval * delta, tf.float32)
     y_0 = tf.equal(y_true, 0)
     y_1 = tf.equal(y_true, 1)
     masks_a_y_0 = tf.map_fn(

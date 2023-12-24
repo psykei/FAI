@@ -17,14 +17,17 @@ FAIRNESS_METRIC_SHORT_NAMES = {
 
 for CUSTOM_METRIC in CHO_METRICS:
     for IDX in IDXS:
-        accs, dps, dis, eos, lambdas, file_names = [], [], [], [], [], []
+        accs, precs, recs, f1s, dps, dis, eos, lambdas, file_names = [], [], [], [], [], [], [], [], []
         for LAMBDA in cho_lambdas(IDX, CUSTOM_METRIC):
             files = get_files_from_parameters(
                 custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX, path=PATH
             )
             for file in files:
-                loss, acc, dp, di, eo = get_final_metrics_from_file(file)
+                acc, prec, rec, f1, dp, di, eo = get_final_metrics_from_file(file)
                 accs.append(acc)
+                precs.append(prec)
+                recs.append(rec)
+                f1s.append(f1)
                 dps.append(dp)
                 dis.append(di)
                 eos.append(eo)
@@ -38,6 +41,9 @@ for CUSTOM_METRIC in CHO_METRICS:
                 "file name": file_names,
                 "lambda": lambdas,
                 "acc": accs,
+                "prec": precs,
+                "rec": recs,
+                "f1": f1s,
                 "dp": dps,
                 "di": dis,
                 "eo": eos,

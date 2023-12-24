@@ -1,5 +1,4 @@
 import os
-
 import pandas as pd
 from analysis import get_files_from_parameters, get_final_metrics_from_file
 from analysis.our import PATH as ANALYSIS_PATH
@@ -16,7 +15,7 @@ FAIRNESS_METRIC_SHORT_NAMES = {
     "equalized_odds": "eo",
 }
 
-for CUSTOM_METRIC in ["demographic_parity"]:  #CUSTOM_METRICS:
+for CUSTOM_METRIC in CUSTOM_METRICS:
     for IDX in IDXS:
         accs, precs, recs, f1s, dps, dis, eos, lambdas, file_names = [], [], [], [], [], [], [], [], []
         for LAMBDA in our_lambdas(IDX, CUSTOM_METRIC):
@@ -24,7 +23,7 @@ for CUSTOM_METRIC in ["demographic_parity"]:  #CUSTOM_METRICS:
                 path=OUR_PATH, custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX
             )
             for file in files:
-                loss, acc, prec, rec, f1, dp, di, eo = get_final_metrics_from_file(file)
+                acc, prec, rec, f1, dp, di, eo = get_final_metrics_from_file(file)
                 accs.append(acc)
                 precs.append(prec)
                 recs.append(rec)
@@ -35,7 +34,7 @@ for CUSTOM_METRIC in ["demographic_parity"]:  #CUSTOM_METRICS:
                 lambdas.append(LAMBDA)
                 file_names.append(file.name)
                 # os.remove(file)
-                # if CUSTOM_METRIC == "equalized_odds" and IDX == 0:
+                # if CUSTOM_METRIC == "equalized_odds" and IDX == 7:
                 #     os.remove(file)
         df = pd.DataFrame(
             {

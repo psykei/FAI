@@ -303,7 +303,7 @@ def equalized_odds(
         eo = np.nan_to_num(eo)
 
         if strategy == Strategy.EQUAL:
-            eo = np.sum(eo) / len(y_true)
+            eo = np.sum(eo) / len(unique_protected)
         elif strategy == Strategy.FREQUENCY:
             eo = np.sum(eo * number_of_samples) / np.sum(number_of_samples)
         elif strategy == Strategy.INVERSE_FREQUENCY:

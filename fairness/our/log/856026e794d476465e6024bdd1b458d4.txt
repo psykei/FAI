@@ -9,36 +9,39 @@ Parameters:
 	LAMBDA=0.3
 	ONE_HOT=False
 Fold 1
-Early stopping at epoch 127 because of condition 2
-Test accuracy: 0.8650
-Demographic parity: 0.0229
-Disparate impact: 0.6691
-Equalized odds: 0.0528
-Fold 2
-Early stopping at epoch 101 because of condition 2
-Test accuracy: 0.8665
-Demographic parity: 0.0233
-Disparate impact: 0.6703
-Equalized odds: 0.0591
-Fold 3
-Early stopping at epoch 116 because of condition 2
-Test accuracy: 0.8629
-Demographic parity: 0.0216
-Disparate impact: 0.7039
-Equalized odds: 0.0473
-Fold 4
 Early stopping at epoch 100 because of condition 2
-Test accuracy: 0.8641
-Demographic parity: 0.0212
-Disparate impact: 0.6908
-Equalized odds: 0.0333
+Test accuracy: 0.8642
+Test precision: 0.7728
+Test recall: 0.6125
+Test f1: 0.6834
+Fold 2
+Early stopping at epoch 134 because of condition 2
+Test accuracy: 0.8639
+Test precision: 0.7669
+Test recall: 0.6193
+Test f1: 0.6853
+Fold 3
+Early stopping at epoch 100 because of condition 2
+Test accuracy: 0.8642
+Test precision: 0.7424
+Test recall: 0.6621
+Test f1: 0.7000
+Fold 4
+Early stopping at epoch 154 because of condition 2
+Test accuracy: 0.8688
+Test precision: 0.7686
+Test recall: 0.6463
+Test f1: 0.7021
 Fold 5
-Early stopping at epoch 135 because of condition 2
-Test accuracy: 0.8695
-Demographic parity: 0.0251
-Disparate impact: 0.6171
-Equalized odds: 0.0464
-Mean test accuracy: 0.8656
-Mean demographic parity: 0.0228
-Mean disparate impact: 0.6702
-Mean equalized odds: 0.0478
+Early stopping at epoch 100 because of condition 2
+Test accuracy: 0.8663
+Test precision: 0.7814
+Test recall: 0.6129
+Test f1: 0.6870
+Mean test accuracy: 0.8655
+Mean test precision: 0.7664
+Mean test recall: 0.6306
+Mean test f1: 0.6915
+Mean demographic parity: 0.0771
+Mean disparate impact: 0.6121
+Mean equalized odds: 0.0908

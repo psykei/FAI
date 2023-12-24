@@ -10,41 +10,38 @@ Parameters:
 	ONE_HOT=False
 Fold 1
 Early stopping at epoch 100 because of condition 2
-Test loss: 0.6944
-Test accuracy: 0.8044
-Demographic parity: 0.0250
-Disparate impact: 0.5097
-Equalized odds: 0.0219
+Test accuracy: 0.8086
+Test precision: 0.9021
+Test recall: 0.2246
+Test f1: 0.3596
 Fold 2
-Early stopping at epoch 100 because of condition 2
-Test loss: 0.6826
-Test accuracy: 0.7972
-Demographic parity: 0.0218
-Disparate impact: 0.4818
-Equalized odds: 0.0220
+Early stopping at epoch 101 because of condition 2
+Test accuracy: 0.7942
+Test precision: 0.9339
+Test recall: 0.1510
+Test f1: 0.2599
 Fold 3
 Early stopping at epoch 100 because of condition 2
-Test loss: 0.6828
-Test accuracy: 0.7979
-Demographic parity: 0.0225
-Disparate impact: 0.4874
-Equalized odds: 0.0199
+Test accuracy: 0.7969
+Test precision: 0.9360
+Test recall: 0.1625
+Test f1: 0.2770
 Fold 4
-Early stopping at epoch 100 because of condition 2
-Test loss: 0.6871
-Test accuracy: 0.7990
-Demographic parity: 0.0222
-Disparate impact: 0.4980
-Equalized odds: 0.0220
+Early stopping at epoch 101 because of condition 2
+Test accuracy: 0.8006
+Test precision: 0.9276
+Test recall: 0.1809
+Test f1: 0.3028
 Fold 5
 Early stopping at epoch 100 because of condition 2
-Test loss: 0.6849
-Test accuracy: 0.8033
-Demographic parity: 0.0224
-Disparate impact: 0.5465
-Equalized odds: 0.0189
-Mean test loss: 0.6864
-Mean test accuracy: 0.8003
-Mean demographic parity: 0.0228
-Mean disparate impact: 0.5047
-Mean equalized odds: 0.0209
+Test accuracy: 0.8035
+Test precision: 0.9180
+Test recall: 0.1963
+Test f1: 0.3235
+Mean test accuracy: 0.8008
+Mean test precision: 0.9235
+Mean test recall: 0.1831
+Mean test f1: 0.3046
+Mean demographic parity: 0.0235
+Mean disparate impact: 0.3601
+Mean equalized odds: 0.0221
