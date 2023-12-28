@@ -2,7 +2,7 @@
 *.DS_Store
 dataset/cache
 fairness/log/
-fairness/*/log
+#fairness/*/log
 analysis/*.csv
 analysis/*/*.csv
 images/*.pdf

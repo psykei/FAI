@@ -1,0 +1,23 @@
+Parameters:
+	SEED=0
+	K=5
+	EPOCHS=5000
+	BATCH_SIZE=500
+	NEURONS_PER_LAYER=[100, 50]
+	IDX=7
+	CUSTOM_METRIC=equalized_odds
+	LAMBDA=0.9968
+	ONE_HOT=False
+Fold 1
+Early stopping at epoch 309 because of condition 2
+Test accuracy: 0.8507
+Test precision: 0.8508
+Test recall: 0.4559
+Test F1: 0.5937
+Fold 2
+Early stopping at epoch 106 because of condition 2
+Test accuracy: 0.8124
+Test precision: 0.9616
+Test recall: 0.2250
+Test F1: 0.3646
+Fold 3
