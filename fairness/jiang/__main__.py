@@ -17,7 +17,7 @@ DATA_LOSS = nn.functional.binary_cross_entropy
 for IDX in IDXS:
     CONTINUOUS = True if IDX == 0 else False
     # CONTINUOUS = False
-    for metric in CHO_METRICS:
+    for metric in JIANG_METRICS:
         for JIANG_LAMBDA in jiang_lambdas(IDX):
             idf = "_".join(
                 [
@@ -50,10 +50,13 @@ for IDX in IDXS:
                 )
                 (
                     mean_accuracy,
+                    mean_precision,
+                    mean_recall,
+                    mean_f1,
                     mean_demographic_parity,
                     mean_disparate_impact,
                     mean_equalized_odds,
-                ) = (0, 0, 0, 0)
+                ) = (0, 0, 0, 0, 0, 0, 0)
                 for fold, (train_idx, valid_idx) in enumerate(kfold.split(train)):
                     # Set a seed for random number generation
                     random.seed(SEED)
@@ -115,11 +118,23 @@ for IDX in IDXS:
 
                     # Compute metrics
                     # Round to the nearest integer
-                    y_pred = np.rint(y_pred)
-                    accuracy = accuracy_score(fairness_dataset.Y_test, y_pred)
+                    y_pred = np.squeeze(np.array(np.rint(y_pred)))
+                    tp = np.sum(np.logical_and(y_pred == 1, test.iloc[:, -1].to_numpy() == 1))
+                    tn = np.sum(np.logical_and(y_pred == 0, test.iloc[:, -1].to_numpy() == 0))
+                    fp = np.sum(np.logical_and(y_pred == 1, test.iloc[:, -1].to_numpy() == 0))
+                    fn = np.sum(np.logical_and(y_pred == 0, test.iloc[:, -1].to_numpy() == 1))
+                    accuracy = accuracy_score(test.iloc[:, -1].to_numpy(), y_pred)
+                    precision = tp / (tp + fp)
+                    recall = tp / (tp + fn)
+                    f1 = 2 * (precision * recall) / (precision + recall)
                     logger.info(f"Test accuracy: {accuracy:.4f}")
-                    y_pred = y_pred.detach().cpu().numpy()
+                    logger.info(f"Test precision: {precision:.4f}")
+                    logger.info(f"Test recall: {recall:.4f}")
+                    logger.info(f"Test F1: {f1:.4f}")
                     mean_accuracy += accuracy
+                    mean_precision += precision
+                    mean_recall += recall
+                    mean_f1 += f1
                     mean_demographic_parity += demographic_parity(
                         fairness_dataset.Z_test, y_pred, continuous=CONTINUOUS
                     )
@@ -134,10 +149,16 @@ for IDX in IDXS:
                     )
 
                 mean_accuracy /= K
+                mean_precision /= K
+                mean_recall /= K
+                mean_f1 /= K
                 mean_demographic_parity /= K
                 mean_disparate_impact /= K
                 mean_equalized_odds /= K
                 logger.info(f"Mean accuracy: {mean_accuracy:0.4f}")
+                logger.info(f"Mean precision: {mean_precision:0.4f}")
+                logger.info(f"Mean recall: {mean_recall:0.4f}")
+                logger.info(f"Mean F1: {mean_f1:0.4f}")
                 logger.info(f"Mean demographic parity: {mean_demographic_parity:0.4f}")
                 logger.info(f"Mean disparate impact: {mean_disparate_impact:0.4f}")
                 logger.info(f"Mean equalized odds: {mean_equalized_odds:0.4f}")
