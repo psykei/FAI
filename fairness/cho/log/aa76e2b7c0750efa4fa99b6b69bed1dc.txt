@@ -1,0 +1,47 @@
+Parameters:
+	SEED=0
+	K=5
+	EPOCHS=5000
+	BATCH_SIZE=500
+	NEURONS_PER_LAYER=[100, 50]
+	IDX=7
+	CUSTOM_METRIC=demographic_parity
+	LAMBDA=0.9934
+	ONE_HOT=False
+Fold 1
+Early stopping at epoch 100 because of condition 2
+Test accuracy: 0.8323
+Test precision: 0.8352
+Test recall: 0.3730
+Test F1: 0.5157
+Fold 2
+Early stopping at epoch 101 because of condition 2
+Test accuracy: 0.8205
+Test precision: 0.8544
+Test recall: 0.3011
+Test F1: 0.4453
+Fold 3
+Early stopping at epoch 215 because of condition 2
+Test accuracy: 0.8414
+Test precision: 0.8422
+Test recall: 0.4153
+Test F1: 0.5563
+Fold 4
+Early stopping at epoch 100 because of condition 2
+Test accuracy: 0.8396
+Test precision: 0.8111
+Test recall: 0.4299
+Test F1: 0.5619
+Fold 5
+Early stopping at epoch 100 because of condition 2
+Test accuracy: 0.7607
+Test precision: nan
+Test recall: 0.0000
+Test F1: nan
+Mean accuracy: 0.8189
+Mean precision: nan
+Mean recall: 0.3038
+Mean F1: nan
+Mean demographic parity: 0.0408
+Mean disparate impact: 0.1519
+Mean equalized odds: 0.1844
