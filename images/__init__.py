@@ -35,7 +35,7 @@ def plot_fairness_metric(
     """
     data = pd.read_csv(data_file)
     # Exclude experiments with accuracy < 0.5
-    data = data[data["acc"] >= 0.5]
+    data = data[data["acc"] >= 0.75]
     acc = data["acc"]
     fairness = data[fairness_metric]
     # use a gradient based on lambda
@@ -76,7 +76,7 @@ def plot_fairness_comparison(
         if os.path.isfile(data_file):
             data = pd.read_csv(data_file)
             # Exclude experiments with accuracy < 0.5
-            data = data[data["acc"] >= 0.5]
+            data = data[data["acc"] >= 0.75]
             acc = data["acc"]
             fairness = data[FAIRNESS_METRIC_SHORT_NAMES[fairness_metric]]
             if fairness_metric == "disparate_impact":
