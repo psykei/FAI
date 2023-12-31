@@ -1,0 +1,47 @@
+Parameters:
+	SEED=0
+	K=5
+	EPOCHS=5000
+	BATCH_SIZE=500
+	NEURONS_PER_LAYER=[100, 50]
+	IDX=8
+	CUSTOM_METRIC=equalized_odds
+	LAMBDA=10.0
+	ONE_HOT=False
+Fold 1
+Early stopping at epoch 235 because of condition 2
+Test accuracy: 0.8127
+Test precision: 0.8994
+Test recall: 0.2447
+Test f1: 0.3847
+Fold 2
+Early stopping at epoch 138 because of condition 2
+Test accuracy: 0.8020
+Test precision: 0.9244
+Test recall: 0.1882
+Test f1: 0.3127
+Fold 3
+Early stopping at epoch 226 because of condition 2
+Test accuracy: 0.8249
+Test precision: 0.8567
+Test recall: 0.3221
+Test f1: 0.4681
+Fold 4
+Early stopping at epoch 100 because of condition 2
+Test accuracy: 0.8115
+Test precision: 0.9002
+Test recall: 0.2391
+Test f1: 0.3778
+Fold 5
+Early stopping at epoch 179 because of condition 2
+Test accuracy: 0.8173
+Test precision: 0.9013
+Test recall: 0.2656
+Test f1: 0.4103
+Mean test accuracy: 0.8137
+Mean test precision: 0.8964
+Mean test recall: 0.2519
+Mean test f1: 0.3907
+Mean demographic parity: 0.0428
+Mean disparate impact: 0.0161
+Mean equalized odds: 0.1476
