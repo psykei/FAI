@@ -42,17 +42,17 @@ def generate_lambdas(max_lambda: float, steps: float, min_lambda: float = 0.):
 
 
 # Hyperparameters of our method
-OUR_MAX_LAMBDAS_DP = [5, 8, 5]
+OUR_MAX_LAMBDAS_DP = [5, 15, 5]
 OUR_MIN_LAMBDAS_DP = [0, 0, 0]
 OUR_STEPS_DP = [0.1, 0.1, 0.1]
 
-OUR_MAX_LAMBDAS_DI = [0.5, 0.5, 1]
+OUR_MAX_LAMBDAS_DI = [0.5, 0.15, 0.15]
 OUR_MIN_LAMBDAS_DI = [0, 0, 0]
-OUR_STEPS_DI = [0.01, 0.05, 0.02]
+OUR_STEPS_DI = [0.01, 0.005, 0.005]
 
-OUR_MAX_LAMBDAS_EO = [5, 5, 15]
+OUR_MAX_LAMBDAS_EO = [5, 5, 0.5]
 OUR_MIN_LAMBDAS_EO = [0, 0, 0]
-OUR_STEPS_EO = [0.1, 0.1, 0.5]
+OUR_STEPS_EO = [0.1, 0.1, 0.01]
 
 
 def our_lambdas(index: int, metric: str = "demographic_parity"):
@@ -79,9 +79,9 @@ CHO_MAX_LAMBDAS_DP = [1, 1, 1]
 CHO_MIN_LAMBDAS_DP = [0, 0.99, 0]
 CHO_STEPS_DP = [0.01, 0.0001, 0.01]
 
-CHO_MAX_LAMBDAS_EO = [1, 0.999, 2]
-CHO_MIN_LAMBDAS_EO = [0.85, 0.995, 0]
-CHO_STEPS_EO = [0.001, 0.0001, 0.05]
+CHO_MAX_LAMBDAS_EO = [1, 1, 1]
+CHO_MIN_LAMBDAS_EO = [0.85, 0.995, 0.995]
+CHO_STEPS_EO = [0.001, 0.0001, 0.0001]
 
 
 def cho_lambdas(index: int, metric: str = "demographic_parity"):
@@ -97,7 +97,7 @@ def cho_lambdas(index: int, metric: str = "demographic_parity"):
             return generate_lambdas(CHO_MAX_LAMBDAS_EO[0], 0.0001, 0.999) + generate_lambdas(0.8, 0.05, 0) + generate_lambdas(CHO_MAX_LAMBDAS_EO[0], CHO_STEPS_EO[0], CHO_MIN_LAMBDAS_EO[0])
         if index == 8:
             # Here we add one more interval to have a better resolution of the trade-off curve
-            return generate_lambdas(CHO_MAX_LAMBDAS_EO[0], 0.001, 0.98) + generate_lambdas(CHO_MAX_LAMBDAS_EO[2], CHO_STEPS_EO[2], CHO_MIN_LAMBDAS_EO[2])
+            return generate_lambdas(CHO_MAX_LAMBDAS_EO[2], CHO_STEPS_EO[2], CHO_MIN_LAMBDAS_EO[2])
         else:
             return generate_lambdas(CHO_MAX_LAMBDAS_EO[IDX_TO_IDX[index]], CHO_STEPS_EO[IDX_TO_IDX[index]], CHO_MIN_LAMBDAS_EO[IDX_TO_IDX[index]])
     else:

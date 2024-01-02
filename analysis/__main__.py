@@ -18,5 +18,8 @@ for METRIC in METRICS:
             path / (METRIC + "_" + IDX_TO_NAME[IDX] + ".csv") for path in DATA_PATHS
         ]
         plot_fairness_comparison(
-            data_files, METHOD_NAMES, COLORS, SHAPES, IMAGES_PATH, METRIC, IDX
+            data_files, METHOD_NAMES, COLORS, SHAPES, IMAGES_PATH, METRIC, IDX, 'acc'
+        )
+        plot_fairness_comparison(
+            data_files, METHOD_NAMES, COLORS, SHAPES, IMAGES_PATH, METRIC, IDX, 'f1'
         )

@@ -8,6 +8,7 @@ analysis/*.csv
 analysis/*/*.csv
 images/*.pdf
 images/*/*.pdf
+images/*/*/*.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

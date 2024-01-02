@@ -56,4 +56,12 @@ for CUSTOM_METRIC in CHO_METRICS:
             IMAGES_PATH,
             FAIRNESS_METRIC_SHORT_NAMES[CUSTOM_METRIC],
             IDX,
+            'acc'
+        )
+        plot_fairness_metric(
+            ANALYSIS_PATH / filename,
+            IMAGES_PATH,
+            FAIRNESS_METRIC_SHORT_NAMES[CUSTOM_METRIC],
+            IDX,
+            'f1'
         )
