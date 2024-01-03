@@ -385,17 +385,22 @@ def discrete_equalized_odds(
     differences_1 = tf.map_fn(lambda mask: tf.math.abs(mask - mask_y_1), masks_a_y_1)
     total_samples = tf.reduce_sum(number_of_samples_a_0) + tf.reduce_sum(number_of_samples_a_1)
 
+    number_unique = tf.cast(tf.size(unique_protected), tf.float32)
     if weights_strategy == Strategy.EQUAL:
-        number_unique = tf.cast(tf.size(unique_protected), tf.float32)
         return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) / (2 * number_unique)
-    elif weights_strategy == Strategy.FREQUENCY:
-        differences_0 = tf.math.multiply_no_nan(differences_0, number_of_samples_a_0)
-        differences_1 = tf.math.multiply_no_nan(differences_1, number_of_samples_a_1)
-        return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) / total_samples
-    elif weights_strategy == Strategy.INVERSE_FREQUENCY:
-        differences_0 = tf.math.multiply_no_nan(differences_0, total_samples - number_of_samples_a_0)
-        differences_1 = tf.math.multiply_no_nan(differences_1, total_samples - number_of_samples_a_1)
-        return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) / total_samples
+    else:
+        a_occurrences = tf.map_fn(
+            lambda value: tf.reduce_sum(tf.cast(tf.equal(protected, value), tf.float32)),
+            unique_protected,
+        )
+        if weights_strategy == Strategy.FREQUENCY:
+            differences_0 = tf.math.multiply_no_nan(differences_0, number_of_samples_a_0)
+            differences_1 = tf.math.multiply_no_nan(differences_1, number_of_samples_a_1)
+            return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) * a_occurrences/ total_samples
+        elif weights_strategy == Strategy.INVERSE_FREQUENCY:
+            differences_0 = tf.math.multiply_no_nan(differences_0, total_samples - number_of_samples_a_0)
+            differences_1 = tf.math.multiply_no_nan(differences_1, total_samples - number_of_samples_a_1)
+            return (tf.reduce_sum(differences_0) + tf.reduce_sum(differences_1)) * (1 - a_occurrences/total_samples) / (number_unique - 1)
 
 
 def continuous_equalized_odds(

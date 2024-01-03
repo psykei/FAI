@@ -33,9 +33,9 @@ for CUSTOM_METRIC in CUSTOM_METRICS:
                 eos.append(eo)
                 lambdas.append(LAMBDA)
                 file_names.append(file.name)
-                # os.remove(file)
-                # if CUSTOM_METRIC == "equalized_odds" and IDX == 7:
-                #     os.remove(file)
+                if CUSTOM_METRIC == "equalized_odds" and IDX in [7, 8]:
+                    if os.path.isfile(file):
+                        os.remove(file)
         df = pd.DataFrame(
             {
                 "file name": file_names,

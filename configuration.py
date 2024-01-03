@@ -50,9 +50,9 @@ OUR_MAX_LAMBDAS_DI = [0.5, 0.15, 0.15]
 OUR_MIN_LAMBDAS_DI = [0, 0, 0]
 OUR_STEPS_DI = [0.01, 0.005, 0.005]
 
-OUR_MAX_LAMBDAS_EO = [5, 5, 0.5]
+OUR_MAX_LAMBDAS_EO = [5, 5, 10]
 OUR_MIN_LAMBDAS_EO = [0, 0, 0]
-OUR_STEPS_EO = [0.1, 0.1, 0.01]
+OUR_STEPS_EO = [0.1, 0.01, 0.1]
 
 
 def our_lambdas(index: int, metric: str = "demographic_parity"):
