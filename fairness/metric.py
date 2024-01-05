@@ -11,8 +11,8 @@ class Strategy:
     """
 
     EQUAL = 0
-    GREATER_THAN = 1
-    LESS_THAN = 2
+    FREQUENCY = 1
+    INVERSE_FREQUENCY = 2
 
 
 def single_conditional_probability(
@@ -176,13 +176,7 @@ def disparate_impact(
                 number_of_sample = np.sum(np.logical_and(p >= min_value, p < max_value))
                 ratio = conditional_probability_in / conditional_probability_out
                 inverse_ratio = conditional_probability_out / conditional_probability_in
-
-                if strategy == Strategy.EQUAL:
-                    result += min(ratio, inverse_ratio) / len(unique_protected)
-                elif strategy == Strategy.FREQUENCY:
-                    result += min(ratio, inverse_ratio) * number_of_sample / len(p)
-                elif strategy == Strategy.INVERSE_FREQUENCY:
-                    result += min(ratio, inverse_ratio) * ((1 - (number_of_sample / len(p))) / (len(unique_protected) - 1))
+                result += min(ratio, inverse_ratio) * number_of_sample
         return result
 
     if continuous:
@@ -192,11 +186,19 @@ def disparate_impact(
         probabilities_not_a = np.array([np.mean(y[p != x]) for x in unique_protected])
         first_impact = np.nan_to_num(probabilities_a / probabilities_not_a)
         second_impact = np.nan_to_num(probabilities_not_a / probabilities_a)
-        number_of_samples = np.array([np.sum(p == x) for x in unique_protected])
-        pair_wise_weighted_min = (
-            np.min(np.vstack((first_impact, second_impact)), axis=0) * number_of_samples
-        )
-        impact = np.sum(pair_wise_weighted_min) / len(p)
+        impact = np.array([min(x, y) for x, y in zip(first_impact, second_impact)])
+        if strategy == Strategy.EQUAL:
+            result = np.sum(impact) / len(unique_protected)
+        else:
+            number_of_sample = len(unique_protected)
+            if strategy == Strategy.FREQUENCY:
+                result = np.sum(impact * number_of_sample / len(p))
+            elif strategy == Strategy.INVERSE_FREQUENCY:
+                result = np.sum(impact * ((1 - (number_of_sample / len(p))) / (len(unique_protected) - 1)))
+            else:
+                result = 0
+        impact = result
+
     return impact > threshold if not numeric else impact
 
 

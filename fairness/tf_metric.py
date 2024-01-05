@@ -253,10 +253,6 @@ def discrete_disparate_impact(
     @return: the disparate impact error.
     """
     unique_protected, _ = tf.unique(protected)
-    numbers_a = tf.map_fn(
-        lambda value: tf.reduce_sum(tf.cast(tf.equal(protected, value), tf.float32)),
-        unique_protected,
-    )
     impacts = tf.map_fn(
         lambda value: tf.reduce_min(
             [
@@ -274,10 +270,15 @@ def discrete_disparate_impact(
     )
     if weights_strategy == Strategy.EQUAL:
         return 1 - (tf.reduce_sum(impacts) / tf.cast(tf.size(unique_protected), tf.float32))
-    elif weights_strategy == Strategy.FREQUENCY:
-        return 1 - (tf.reduce_sum(impacts * numbers_a) / tf.reduce_sum(numbers_a))
-    elif weights_strategy == Strategy.INVERSE_FREQUENCY:
-        return 1 - (tf.reduce_sum(impacts * (tf.reduce_sum(numbers_a) - numbers_a)) / tf.reduce_sum(numbers_a))
+    else:
+        numbers_a = tf.map_fn(
+            lambda value: tf.reduce_sum(tf.cast(tf.equal(protected, value), tf.float32)),
+            unique_protected,
+        )
+        if weights_strategy == Strategy.FREQUENCY:
+            return 1 - (tf.reduce_sum(impacts * numbers_a) / tf.reduce_sum(numbers_a))
+        elif weights_strategy == Strategy.INVERSE_FREQUENCY:
+            return 1 - (tf.reduce_sum(impacts * (tf.reduce_sum(numbers_a) - numbers_a)) / tf.reduce_sum(numbers_a))
 
 
 def continuous_disparate_impact(

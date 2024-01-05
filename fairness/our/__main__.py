@@ -152,11 +152,12 @@ def compute_experiments_given_fairness_metric(metric: str = None, IDX: int = 0):
                 )
                 # loss, accuracy, _, = model.evaluate(test.iloc[:, :-1], test.iloc[:, -1], verbose=VERBOSE)
                 # logger.info(f"Test loss: {loss:.4f}")
-                predictions = np.squeeze(np.round(model.predict(test.iloc[:, :-1])))
-                tp = np.sum(np.logical_and(predictions == 1, test.iloc[:, -1].to_numpy() == 1))
-                tn = np.sum(np.logical_and(predictions == 0, test.iloc[:, -1].to_numpy() == 0))
-                fp = np.sum(np.logical_and(predictions == 1, test.iloc[:, -1].to_numpy() == 0))
-                fn = np.sum(np.logical_and(predictions == 0, test.iloc[:, -1].to_numpy() == 1))
+                predictions = np.squeeze(model.predict(test.iloc[:, :-1]))
+                binary_predictions = np.squeeze(np.round(predictions))
+                tp = np.sum(np.logical_and(binary_predictions == 1, test.iloc[:, -1].to_numpy() == 1))
+                tn = np.sum(np.logical_and(binary_predictions == 0, test.iloc[:, -1].to_numpy() == 0))
+                fp = np.sum(np.logical_and(binary_predictions == 1, test.iloc[:, -1].to_numpy() == 0))
+                fn = np.sum(np.logical_and(binary_predictions == 0, test.iloc[:, -1].to_numpy() == 1))
                 accuracy = (tp + tn) / (tp + tn + fp + fn)
                 precision = tp / (tp + fp) if tp + fp > 0 else 0
                 recall = tp / (tp + fn) if tp + fn > 0 else 0
