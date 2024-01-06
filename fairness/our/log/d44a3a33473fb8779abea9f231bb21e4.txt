@@ -42,6 +42,6 @@ Mean test accuracy: 0.7770
 Mean test precision: 0.9771
 Mean test recall: 0.0701
 Mean test f1: 0.1302
-Mean demographic parity: 0.0022
-Mean disparate impact: 0.0116
-Mean equalized odds: 0.0572
+Mean demographic parity: 0.0247
+Mean disparate impact: 0.8115
+Mean equalized odds: 0.0370
