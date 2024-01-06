@@ -23,10 +23,10 @@ for CUSTOM_METRIC in CUSTOM_METRICS:
                 path=OUR_PATH, custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX
             )
             for file in files:
-                # if CUSTOM_METRIC == "disparate_impact" and IDX == 7:
-                #     if os.path.isfile(file):
-                #         os.remove(file)
-                #     continue
+                #if CUSTOM_METRIC == "disparate_impact" and IDX == 8:
+                #    if os.path.isfile(file):
+                #        os.remove(file)
+                #    continue
                 acc, prec, rec, f1, dp, di, eo = get_final_metrics_from_file(file)
                 accs.append(acc)
                 precs.append(prec)
