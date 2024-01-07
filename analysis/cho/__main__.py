@@ -23,6 +23,10 @@ for CUSTOM_METRIC in CHO_METRICS:
                 custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX, path=PATH
             )
             for file in files:
+                if False and CUSTOM_METRIC == "equalized_odds":
+                    if os.path.isfile(file):
+                        os.remove(file)
+                    continue
                 acc, prec, rec, f1, dp, di, eo = get_final_metrics_from_file(file)
                 accs.append(acc)
                 precs.append(prec)
@@ -33,9 +37,7 @@ for CUSTOM_METRIC in CHO_METRICS:
                 eos.append(eo)
                 lambdas.append(LAMBDA)
                 file_names.append(file.name)
-                # if IDX == 7:
-                # file.rename(file.parent / f"old/{file.name}")
-                # os.remove(file)
+
         df = pd.DataFrame(
             {
                 "file name": file_names,

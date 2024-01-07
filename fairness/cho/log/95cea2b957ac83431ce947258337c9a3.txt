@@ -42,6 +42,6 @@ Mean accuracy: 0.8620
 Mean precision: 0.8097
 Mean recall: 0.5550
 Mean F1: 0.6577
-Mean demographic parity: 0.0818
-Mean disparate impact: 0.4649
-Mean equalized odds: 0.0494
+Mean demographic parity: 0.1158
+Mean disparate impact: 5459.9919
+Mean equalized odds: 0.0648

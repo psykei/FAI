@@ -80,8 +80,8 @@ CHO_MIN_LAMBDAS_DP = [0, 0.99, 0]
 CHO_STEPS_DP = [0.01, 0.0001, 0.01]
 
 CHO_MAX_LAMBDAS_EO = [1, 1, 1]
-CHO_MIN_LAMBDAS_EO = [0.85, 0.995, 0.995]
-CHO_STEPS_EO = [0.001, 0.0001, 0.0001]
+CHO_MIN_LAMBDAS_EO = [0.85, 0.99, 0.99]
+CHO_STEPS_EO = [0.001, 0.0005, 0.0005]
 
 
 def cho_lambdas(index: int, metric: str = "demographic_parity"):
