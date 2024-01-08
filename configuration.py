@@ -58,8 +58,6 @@ OUR_STEPS_EO = [0.1, 0.1, 0.05]
 def our_lambdas(index: int, metric: str = "demographic_parity"):
     if metric == "demographic_parity":
         result = generate_lambdas(OUR_MAX_LAMBDAS_DP[IDX_TO_IDX[index]], OUR_STEPS_DP[IDX_TO_IDX[index]], OUR_MIN_LAMBDAS_DP[IDX_TO_IDX[index]])
-        if index == 8:
-            result += generate_lambdas(1, 0.05, 0.05)
     elif metric == "equalized_odds":
         result = generate_lambdas(OUR_MAX_LAMBDAS_EO[IDX_TO_IDX[index]], OUR_STEPS_EO[IDX_TO_IDX[index]], OUR_MIN_LAMBDAS_EO[IDX_TO_IDX[index]])
     elif metric == "disparate_impact":
@@ -77,7 +75,7 @@ CHO_DELTA = 1.0
 
 CHO_MAX_LAMBDAS_DP = [1, 1, 1]
 CHO_MIN_LAMBDAS_DP = [0, 0.99, 0]
-CHO_STEPS_DP = [0.01, 0.0001, 0.01]
+CHO_STEPS_DP = [0.01, 0.0005, 0.01]
 
 CHO_MAX_LAMBDAS_EO = [1, 1, 1]
 CHO_MIN_LAMBDAS_EO = [0.85, 0.99, 0.99]
@@ -86,20 +84,9 @@ CHO_STEPS_EO = [0.001, 0.0005, 0.0005]
 
 def cho_lambdas(index: int, metric: str = "demographic_parity"):
     if metric == "demographic_parity":
-        if index == 7:
-            # Here we add two more intervals to have a better resolution of the trade-off curve
-            return generate_lambdas(0.98, 0.02, 0.952) + generate_lambdas(0.95, 0.05, 0.5) + generate_lambdas(CHO_MAX_LAMBDAS_DP[1], CHO_STEPS_DP[1], CHO_MIN_LAMBDAS_DP[1])
-        else:
-            return generate_lambdas(CHO_MAX_LAMBDAS_DP[IDX_TO_IDX[index]], CHO_STEPS_DP[IDX_TO_IDX[index]], CHO_MIN_LAMBDAS_DP[IDX_TO_IDX[index]])
+        return generate_lambdas(CHO_MAX_LAMBDAS_DP[IDX_TO_IDX[index]], CHO_STEPS_DP[IDX_TO_IDX[index]], CHO_MIN_LAMBDAS_DP[IDX_TO_IDX[index]])
     elif metric == "equalized_odds":
-        if index == 0:
-            # Here we add two more intervals to have a better resolution of the trade-off curve
-            return generate_lambdas(CHO_MAX_LAMBDAS_EO[0], 0.0001, 0.999) + generate_lambdas(0.8, 0.05, 0) + generate_lambdas(CHO_MAX_LAMBDAS_EO[0], CHO_STEPS_EO[0], CHO_MIN_LAMBDAS_EO[0])
-        if index == 8:
-            # Here we add one more interval to have a better resolution of the trade-off curve
-            return generate_lambdas(CHO_MAX_LAMBDAS_EO[2], CHO_STEPS_EO[2], CHO_MIN_LAMBDAS_EO[2])
-        else:
-            return generate_lambdas(CHO_MAX_LAMBDAS_EO[IDX_TO_IDX[index]], CHO_STEPS_EO[IDX_TO_IDX[index]], CHO_MIN_LAMBDAS_EO[IDX_TO_IDX[index]])
+        return generate_lambdas(CHO_MAX_LAMBDAS_EO[IDX_TO_IDX[index]], CHO_STEPS_EO[IDX_TO_IDX[index]], CHO_MIN_LAMBDAS_EO[IDX_TO_IDX[index]])
     else:
         raise ValueError(f"Unknown metric: {metric}")
 

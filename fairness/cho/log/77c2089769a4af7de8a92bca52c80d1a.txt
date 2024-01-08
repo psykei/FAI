@@ -9,25 +9,25 @@ Parameters:
 	LAMBDA=0.9995
 	ONE_HOT=False
 Fold 1
-Early stopping at epoch 136 because of condition 2
+Early stopping at epoch 132 because of condition 2
 Test accuracy: 0.7607
 Test precision: nan
 Test recall: 0.0000
 Test F1: nan
 Fold 2
-Early stopping at epoch 135 because of condition 2
+Early stopping at epoch 143 because of condition 2
 Test accuracy: 0.7607
 Test precision: nan
 Test recall: 0.0000
 Test F1: nan
 Fold 3
-Early stopping at epoch 139 because of condition 2
+Early stopping at epoch 133 because of condition 2
 Test accuracy: 0.7607
 Test precision: nan
 Test recall: 0.0000
 Test F1: nan
 Fold 4
-Early stopping at epoch 135 because of condition 2
+Early stopping at epoch 138 because of condition 2
 Test accuracy: 0.7607
 Test precision: nan
 Test recall: 0.0000
@@ -42,6 +42,6 @@ Mean accuracy: 0.7607
 Mean precision: nan
 Mean recall: 0.0000
 Mean F1: nan
-Mean demographic parity: 0.0000
-Mean disparate impact: 0.0000
-Mean equalized odds: 0.0000
+Mean demographic parity: 0.0494
+Mean disparate impact: 0.7495
+Mean equalized odds: 0.0711

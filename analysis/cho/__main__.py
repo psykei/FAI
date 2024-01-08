@@ -23,7 +23,7 @@ for CUSTOM_METRIC in CHO_METRICS:
                 custom_metric=CUSTOM_METRIC, l=LAMBDA, idx=IDX, path=PATH
             )
             for file in files:
-                if False and CUSTOM_METRIC == "equalized_odds":
+                if False and CUSTOM_METRIC == "demographic_parity":
                     if os.path.isfile(file):
                         os.remove(file)
                     continue
