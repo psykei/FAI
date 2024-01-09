@@ -42,9 +42,9 @@ def generate_lambdas(max_lambda: float, steps: float, min_lambda: float = 0.):
 
 
 # Hyperparameters of our method
-OUR_MAX_LAMBDAS_DP = [5, 15, 5]
+OUR_MAX_LAMBDAS_DP = [5, 5, 2]
 OUR_MIN_LAMBDAS_DP = [0, 0, 0]
-OUR_STEPS_DP = [0.1, 0.1, 0.1]
+OUR_STEPS_DP = [0.1, 0.1, 0.05]
 
 OUR_MAX_LAMBDAS_DI = [0.5, 0.5, 0.5]
 OUR_MIN_LAMBDAS_DI = [0, 0, 0]
@@ -78,8 +78,8 @@ CHO_MIN_LAMBDAS_DP = [0, 0.99, 0]
 CHO_STEPS_DP = [0.01, 0.0005, 0.01]
 
 CHO_MAX_LAMBDAS_EO = [1, 1, 1]
-CHO_MIN_LAMBDAS_EO = [0.85, 0.99, 0.99]
-CHO_STEPS_EO = [0.001, 0.0005, 0.0005]
+CHO_MIN_LAMBDAS_EO = [0.5, 0.99, 0.99]
+CHO_STEPS_EO = [0.01, 0.0005, 0.0005]
 
 
 def cho_lambdas(index: int, metric: str = "demographic_parity"):

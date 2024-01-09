@@ -9,39 +9,39 @@ Parameters:
 	LAMBDA=8.0
 	ONE_HOT=False
 Fold 1
-Early stopping at epoch 166 because of condition 2
-Test accuracy: 0.8431
-Test precision: 0.7962
-Test recall: 0.4628
-Test f1: 0.5853
+Early stopping at epoch 316 because of condition 2
+Test accuracy: 0.8433
+Test precision: 0.8116
+Test recall: 0.4495
+Test f1: 0.5786
 Fold 2
-Early stopping at epoch 261 because of condition 2
-Test accuracy: 0.8447
-Test precision: 0.8048
-Test recall: 0.4636
-Test f1: 0.5883
+Early stopping at epoch 379 because of condition 2
+Test accuracy: 0.8478
+Test precision: 0.7949
+Test recall: 0.4906
+Test f1: 0.6067
 Fold 3
 Early stopping at epoch 154 because of condition 2
 Test accuracy: 0.8421
-Test precision: 0.8027
-Test recall: 0.4508
-Test f1: 0.5774
+Test precision: 0.8208
+Test recall: 0.4350
+Test f1: 0.5686
 Fold 4
-Early stopping at epoch 175 because of condition 2
-Test accuracy: 0.8435
-Test precision: 0.8007
-Test recall: 0.4607
-Test f1: 0.5848
+Early stopping at epoch 201 because of condition 2
+Test accuracy: 0.8450
+Test precision: 0.8102
+Test recall: 0.4602
+Test f1: 0.5870
 Fold 5
-Early stopping at epoch 341 because of condition 2
-Test accuracy: 0.8443
-Test precision: 0.7937
-Test recall: 0.4722
-Test f1: 0.5921
-Mean test accuracy: 0.8435
-Mean test precision: 0.7996
-Mean test recall: 0.4620
-Mean test f1: 0.5856
-Mean demographic parity: 0.0048
-Mean disparate impact: 0.0000
-Mean equalized odds: 0.4101
+Early stopping at epoch 265 because of condition 2
+Test accuracy: 0.8447
+Test precision: 0.8043
+Test recall: 0.4641
+Test f1: 0.5886
+Mean test accuracy: 0.8446
+Mean test precision: 0.8084
+Mean test recall: 0.4599
+Mean test f1: 0.5859
+Mean demographic parity: 0.0049
+Mean disparate impact: 0.9733
+Mean equalized odds: 0.2810
