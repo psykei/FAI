@@ -119,11 +119,12 @@ for IDX in IDXS:
                     # Compute metrics
                     # Round to the nearest integer
                     y_pred_binary = np.squeeze(np.array(np.rint(y_pred)))
+                    y_pred = np.squeeze(np.array(y_pred))
                     tp = np.sum(np.logical_and(y_pred_binary == 1, test.iloc[:, -1].to_numpy() == 1))
                     tn = np.sum(np.logical_and(y_pred_binary == 0, test.iloc[:, -1].to_numpy() == 0))
                     fp = np.sum(np.logical_and(y_pred_binary == 1, test.iloc[:, -1].to_numpy() == 0))
                     fn = np.sum(np.logical_and(y_pred_binary == 0, test.iloc[:, -1].to_numpy() == 1))
-                    accuracy = accuracy_score(test.iloc[:, -1].to_numpy(), y_pred)
+                    accuracy = accuracy_score(test.iloc[:, -1].to_numpy(), y_pred_binary)
                     precision = tp / (tp + fp)
                     recall = tp / (tp + fn)
                     f1 = 2 * (precision * recall) / (precision + recall)

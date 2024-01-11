@@ -96,7 +96,7 @@ CHO_METRICS = ["demographic_parity", "equalized_odds"]
 # Jiang's method configuration
 JIANG_MAX_LAMBDA = [50, 120, 3]
 JIANG_MIN_LAMBDAS = [0, 0, 0]
-JIANG_STEPS = [1, 1, 0.05]
+JIANG_STEPS = [2, 5, 0.1]
 
 
 def jiang_lambdas(index: int):
