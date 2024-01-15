@@ -33,8 +33,8 @@ def plot_fairness_metric(
     data = pd.read_csv(data_file)
     # Exclude experiments with accuracy < 0.75
     # And f1 < 0.35
-    # threshold = 0.5 if ml_metric == 'acc' else 0.35
-    threshold = 0.3
+    threshold = 0.8 if ml_metric == 'acc' else 0.55
+    # threshold = 0.3
     data = data[data[ml_metric] >= threshold]
     acc = data[ml_metric]
     fairness = data[fairness_metric]
@@ -81,8 +81,8 @@ def plot_fairness_comparison(
             data = pd.read_csv(data_file)
             # Exclude experiments with accuracy < 0.75
             # And f1 < 0.35
-            # threshold = 0.5 if ml_metric == 'acc' else 0.35
-            threshold = 0.3
+            threshold = 0.8 if ml_metric == 'acc' else 0.55
+            # threshold = 0.3
             data = data[data[ml_metric] >= threshold]
             acc = data[ml_metric]
             fairness = data[FAIRNESS_METRIC_SHORT_NAMES[fairness_metric]]

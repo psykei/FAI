@@ -42,7 +42,7 @@ def generate_lambdas(max_lambda: float, steps: float, min_lambda: float = 0.):
 
 
 # Hyperparameters of our method
-OUR_MAX_LAMBDAS_DP = [5, 5, 2]
+OUR_MAX_LAMBDAS_DP = [5, 4, 2]
 OUR_MIN_LAMBDAS_DP = [0, 0, 0]
 OUR_STEPS_DP = [0.1, 0.1, 0.05]
 
@@ -74,7 +74,7 @@ CHO_H = 0.1
 CHO_DELTA = 1.0
 
 CHO_MAX_LAMBDAS_DP = [1, 1, 1]
-CHO_MIN_LAMBDAS_DP = [0, 0.99, 0]
+CHO_MIN_LAMBDAS_DP = [0, 0.98, 0]
 CHO_STEPS_DP = [0.01, 0.0005, 0.01]
 
 CHO_MAX_LAMBDAS_EO = [1, 1, 1]
@@ -94,9 +94,9 @@ def cho_lambdas(index: int, metric: str = "demographic_parity"):
 CHO_METRICS = ["demographic_parity", "equalized_odds"]
 
 # Jiang's method configuration
-JIANG_MAX_LAMBDA = [50, 120, 3]
+JIANG_MAX_LAMBDA = [40, 80, 3]
 JIANG_MIN_LAMBDAS = [0, 0, 0]
-JIANG_STEPS = [2, 5, 0.1]
+JIANG_STEPS = [1, 2, 0.1]
 
 
 def jiang_lambdas(index: int):
