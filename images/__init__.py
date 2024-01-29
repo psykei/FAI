@@ -6,9 +6,9 @@ from configuration import IDX_TO_NAME
 
 PATH = Path(__file__).parents[0]
 FAIRNESS_METRIC_LONG_NAMES = {
-    "dp": "Demographic parity",
-    "di": "Disparate impact",
-    "eo": "Equalized odds",
+    "dp": "Demographic Parity",
+    "di": "Disparate Impact",
+    "eo": "Equalized Odds",
 }
 FAIRNESS_METRIC_SHORT_NAMES = {
     "demographic_parity": "dp",
@@ -129,8 +129,15 @@ def plot_fairness_comparison(
             plt.scatter([0.8], [0.877], color="orange", marker="P", s=100)
             method_names.append("Wagner")
 
+    prefix = ''
+    if idx == 8:
+        pass
+    elif idx == 7:
+        prefix = 'Weighted '
+    elif idx == 0:
+        prefix = 'Generalised '
     plt.xlabel(
-        FAIRNESS_METRIC_LONG_NAMES[FAIRNESS_METRIC_SHORT_NAMES[fairness_metric]],
+        prefix + FAIRNESS_METRIC_LONG_NAMES[FAIRNESS_METRIC_SHORT_NAMES[fairness_metric]],
         fontsize=18,
     )
     plt.ylabel("Accuracy" if ml_metric == 'acc' else "F1", fontsize=18)

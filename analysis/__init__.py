@@ -1,7 +1,11 @@
 from pathlib import Path
 import re
-from fairness import PATH as FAIRNESS_PATH
 
+import pandas as pd
+
+from configuration import IDX_TO_NAME
+from fairness import PATH as FAIRNESS_PATH
+from images import plot_fairness_metric, FAIRNESS_METRIC_SHORT_NAMES
 
 PATH = Path(__file__).parents[0]
 LOG = "log"
@@ -131,3 +135,49 @@ def get_final_metrics_from_file(file: Path):
         for i in range(0, 7):
             results.append(float(lines[i - 7].split(":")[1]))
         return results
+
+
+def perform_analysis(index: int, custom_metric: str, lambdas_values: list[float], exp_path: Path, analysis_path: Path, image_path: Path):
+    accs, precs, recs, f1s, dps, dis, eos, lambdas, file_names = [], [], [], [], [], [], [], [], []
+    for LAMBDA in lambdas_values:
+        files = get_files_from_parameters(custom_metric=custom_metric, l=LAMBDA, idx=index, path=exp_path)
+        for file in files:
+            acc, prec, rec, f1, dp, di, eo = get_final_metrics_from_file(file)
+            accs.append(acc)
+            precs.append(prec)
+            recs.append(rec)
+            f1s.append(f1)
+            dps.append(dp)
+            dis.append(di)
+            eos.append(eo)
+            lambdas.append(LAMBDA)
+            file_names.append(file.name)
+    df = pd.DataFrame(
+        {
+            "file name": file_names,
+            "lambda": lambdas,
+            "acc": accs,
+            "prec": precs,
+            "rec": recs,
+            "f1": f1s,
+            "dp": dps,
+            "di": dis,
+            "eo": eos,
+        }
+    )
+    filename = f"{custom_metric}_{IDX_TO_NAME[index]}.csv"
+    df.to_csv(analysis_path / filename, index=False)
+    plot_fairness_metric(
+        analysis_path / filename,
+        image_path,
+        FAIRNESS_METRIC_SHORT_NAMES[custom_metric],
+        index,
+        'acc'
+    )
+    plot_fairness_metric(
+        analysis_path / filename,
+        image_path,
+        FAIRNESS_METRIC_SHORT_NAMES[custom_metric],
+        index,
+        'f1'
+    )
