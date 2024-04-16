@@ -2,7 +2,7 @@ from __future__ import annotations
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from dataset import PATH as DATASET_PATH
+from dataset import PATH as DATASET_PATH, create_cache_directory
 
 DEFAULT_SEED = 0
 DEFAULT_TEST_SIZE = 0.2
@@ -11,11 +11,7 @@ DEFAULT_ADULT_TRAIN_SET_URL = "https://archive.ics.uci.edu/ml/machine-learning-d
 DEFAULT_ADULT_TEST_SET_URL = (
     "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"
 )
-
-
-def _create_cache_directory():
-    if not (DATASET_PATH / "cache").exists():
-        (DATASET_PATH / "cache").mkdir()
+KEEP_ORIGINAL_SPLIT = True
 
 
 class AdultLoader:
@@ -114,7 +110,7 @@ class AdultLoader:
     def load(self, url: str = None, skiprows: int = 0) -> pd.DataFrame:
         if url is None:
             url = self.path
-        _create_cache_directory()
+        create_cache_directory()
         cache_file = DATASET_PATH / "cache" / (url.split("/")[-1] + ".csv")
         if cache_file.exists():
             return pd.read_csv(cache_file)
@@ -124,12 +120,11 @@ class AdultLoader:
             df.to_csv(cache_file, index=False)
             return df
 
-    def load_all(self) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def load_all(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         df_train = self.load()
         df_test = self.load(DEFAULT_ADULT_TEST_SET_URL, skiprows=1)
         df_test.index = range(len(df_train), len(df_train) + len(df_test))
-        result = pd.concat([df_train, df_test], axis=0)
-        return result
+        return df_train, df_test
 
     def load_preprocessed(
         self,
@@ -137,20 +132,29 @@ class AdultLoader:
         one_hot: bool = True,
         preprocess: bool = True,
         min_max: bool = False,
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame or tuple[pd.DataFrame, pd.DataFrame]:
         if all_datasets:
-            df = self.load_all()
+            df_train, df_test = self.load_all()
+            df = pd.concat([df_train, df_test], axis=0)
+            df = self.processor.setup(df, one_hot=one_hot, preprocess=preprocess, min_max=min_max)
+            train, test = df.iloc[:len(df_train), ], df.iloc[len(df_train):, ]
+            return train, test
         else:
             df = self.load()
-        return self.processor.setup(
-            df, one_hot=one_hot, preprocess=preprocess, min_max=min_max
-        )
+            return self.processor.setup(df, one_hot=one_hot, preprocess=preprocess, min_max=min_max)
 
     def load_preprocessed_split(
-        self, validation: bool = True, all_datasets: bool = False, one_hot: bool = True
+        self,
+        validation: bool = True,
+        all_datasets: bool = True,
+        one_hot: bool = True,
+        keep_original_split: bool = KEEP_ORIGINAL_SPLIT,
     ) -> [pd.DataFrame, pd.DataFrame, pd.DataFrame] or [pd.DataFrame, pd.DataFrame]:
         if all_datasets:
-            df = self.load_preprocessed(all_datasets=True, one_hot=one_hot)
+            train, test = self.load_preprocessed(all_datasets=True, one_hot=one_hot)
+            if keep_original_split:
+                return train, test
+            df = pd.concat([train, test], axis=0)
         else:
             df = self.load_preprocessed(one_hot=one_hot)
         return self.processor.split(df, validation=validation)

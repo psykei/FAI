@@ -2,7 +2,7 @@ from analysis import perform_analysis
 from analysis.our import PATH as ANALYSIS_PATH
 from images.our import PATH as IMAGES_PATH
 from configuration import our_lambdas, IDXS, LOG, CUSTOM_METRICS
-from fairness.our import PATH
+from fairness.fauci import PATH
 
 PATH /= LOG
 
