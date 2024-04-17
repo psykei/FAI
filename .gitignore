@@ -1,6 +1,7 @@
 .idea/
 *.DS_Store
 dataset/cache
+experiments/cache
 fairness/log/
 #fairness/*/log
 fairness/*/log/old

@@ -67,6 +67,7 @@ def enable_file_logging(filename: str, level: int = LOG_INFO):
     logger.addHandler(fh)
 
 
+
 def disable_file_logging():
     """
     Disable logging to a file.

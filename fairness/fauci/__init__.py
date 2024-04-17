@@ -32,50 +32,40 @@ def create_fauci_network(
     :return: model with the custom loss function
     """
 
-    def custom_loss_function(
-            local_fairness_metric: Callable,
-            local_input_layer: Input,
-            y_pred: tf.Tensor,
-            y_true: tf.Tensor,
-            protected_idx: int) -> float:
-        """
-        Custom loss function that takes into account the fairness metric.
-
-        @param local_fairness_metric: fairness metric
-        @param local_input_layer: input layer
-        @param y_pred: predicted labels
-        @param y_true: true labels, None if not required by the fairness metric
-        @param protected_idx: index of the protected feature
-        @return: loss value
-        """
-        protected = local_input_layer[:, protected_idx]
-        return local_fairness_metric(protected, y_true, y_pred)
-
     input_layer = model.layers[0].input
     if type_protected_attribute == "continuous":
-        if fairness_metric == "demographic_parity":
-            fairness_metric_function = continuous_demographic_parity
-        elif fairness_metric == "equalized_odds":
-            fairness_metric_function = continuous_equalized_odds
-        elif fairness_metric == "disparate_impact":
-            fairness_metric_function = continuous_disparate_impact
-        else:
-            raise ValueError(f"Unknown fairness metric {fairness_metric}")
+        def tf_demographic_parity(y_true, y_pred):
+            return continuous_demographic_parity(input_layer[:, protected_attribute], y_pred)
+
+        def tf_disparate_impact(y_true, y_pred):
+            return continuous_disparate_impact(input_layer[:, protected_attribute], y_pred)
+
+        def tf_equalized_odds(y_true, y_pred):
+            return continuous_equalized_odds(input_layer[:, protected_attribute], y_true, y_pred)
     else:
-        if fairness_metric == "demographic_parity":
-            fairness_metric_function = discrete_demographic_parity
-        elif fairness_metric == "equalized_odds":
-            fairness_metric_function = discrete_equalized_odds
-        elif fairness_metric == "disparate_impact":
-            fairness_metric_function = discrete_disparate_impact
-        else:
-            raise ValueError(f"Unknown fairness metric {fairness_metric}")
+        def tf_demographic_parity(y_true, y_pred):
+            return discrete_demographic_parity(input_layer[:, protected_attribute], y_pred)
+
+        def tf_disparate_impact(y_true, y_pred):
+            return discrete_disparate_impact(input_layer[:, protected_attribute], y_pred)
+
+        def tf_equalized_odds(y_true, y_pred):
+            return discrete_equalized_odds(input_layer[:, protected_attribute], y_true, y_pred)
+
+    if fairness_metric == "demographic_parity":
+        fairness_metric_function = tf_demographic_parity
+    elif fairness_metric == "disparate_impact":
+        fairness_metric_function = tf_disparate_impact
+    elif fairness_metric == "equalized_odds":
+        fairness_metric_function = tf_equalized_odds
+    else:
+        raise ValueError(f"Unknown fairness metric {fairness_metric}")
 
     def custom_loss(y_true, y_pred):
-        fair_cost_factor = custom_loss_function(fairness_metric_function, input_layer, y_pred, y_true, protected_attribute)
-        return tf.cast(binary_crossentropy(y_true, y_pred), tf.float64) + lambda_value * fair_cost_factor
+        fair_cost_factor = fairness_metric_function(y_true, y_pred)
+        return tf.cast(binary_crossentropy(y_true, y_pred), tf.float64) + tf.cast(lambda_value * fair_cost_factor, tf.float64)
 
-    model.compile(loss=custom_loss, optimizer=Adam(), metrics=["accuracy", custom_loss])
+    model.compile(loss=custom_loss, optimizer=Adam(), metrics=["accuracy"])
     return model
 
 

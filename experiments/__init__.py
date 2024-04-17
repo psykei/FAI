@@ -2,7 +2,6 @@ import math
 from logging import Logger
 from pathlib import Path
 from typing import Iterable
-
 import numpy as np
 import torch
 from sklearn.metrics import roc_auc_score
@@ -11,7 +10,6 @@ from tensorflow.python.keras.callbacks import Callback
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.models import Model
 from torch import nn
-
 from experiments._logging import INDENT, LOG_FLOAT_PRECISION
 from fairness.metric import demographic_parity, equalized_odds, disparate_impact
 
@@ -26,9 +24,14 @@ METRIC_LIST_NAMES = [
     'f1',
     'auc',
     'demographic_parity',
-    'disparate_impact'
+    'disparate_impact',
     'equalized_odds'
 ]
+
+
+def create_cache_directory():
+    if not CACHE_PATH.exists():
+        CACHE_PATH.mkdir()
 
 
 def get_feature_data_type(dataset_name: str, index: int) -> str:
@@ -45,19 +48,15 @@ def get_feature_data_type(dataset_name: str, index: int) -> str:
 
 class TensorflowConditions(Callback):
 
-    def __init__(self, patience: int, fairness_metric_name: str):
+    def __init__(self, patience: int):
         super().__init__()
         self.patience = patience
-        self.fairness_metric_name = fairness_metric_name
-        self.best_accuracy = 0
-        self.best_fairness_metric = 0 if fairness_metric_name == DI_METRIC_NAME else math.inf
+        self.best_loss = math.inf
         self.wait = 0
         self.stopped_epoch = 0
         self.best_weights = None
 
     def on_train_begin(self, logs=None):
-        self.best_accuracy = 0
-        self.best_fairness_metric = 0 if self.fairness_metric_name == DI_METRIC_NAME else math.inf
         self.wait = 0
         self.stopped_epoch = 0
         self.best_weights = self.model.get_weights()
@@ -68,23 +67,17 @@ class TensorflowConditions(Callback):
             self.stopped_epoch = epoch
             self.model.stop_training = True
             self.model.set_weights(self.best_weights)
+            print(f"Stopping at epoch {epoch + 1}")
 
-        accuracy = logs.get('val_acc')
-        fairness_metric = logs.get("val_tf_" + self.fairness_metric_name)
-        if self.fairness_metric_name == DI_METRIC_NAME:
-            fairness_metric = 1 - fairness_metric
-            metric_condition = fairness_metric > self.best_fairness_metric
-        else:
-            metric_condition = self.best_fairness_metric > fairness_metric
+        loss_value = logs['loss']
 
         # First condition: reached the maximum amount of epochs
         if epoch + 1 == self.params['epochs']:
             end()
 
-        # Second condition: accuracy and fairness metric does not improve for patience epochs
-        if accuracy > self.best_accuracy and metric_condition:
-            self.best_accuracy = max(self.best_accuracy, accuracy)
-            self.best_fairness_metric = max(self.best_fairness_metric, fairness_metric)
+        # Second condition: loss value does not improve for patience epochs
+        if loss_value < self.best_loss:
+            self.best_loss = loss_value
             self.wait = 0
             self.best_weights = self.model.get_weights()
         else:
@@ -94,38 +87,27 @@ class TensorflowConditions(Callback):
 
 
 class PyTorchConditions:
-    def __init__(self, model: torch.nn.Module, patience: int, fairness_metric_name: str, max_epochs: int):
+    def __init__(self, model: torch.nn.Module, patience: int, max_epochs: int):
         super().__init__()
         self.model = model
         self.patience = patience
-        self.fairness_metric_name = fairness_metric_name
-        self.best_accuracy = 0.0
-        self.best_fairness_metric = 0.0 if fairness_metric_name == DI_METRIC_NAME else math.inf
+        self.best_loss = math.inf
         self.wait = 0
-        self.stopped_epoch = 0
         self.max_epochs = max_epochs
         self.best_weights = None
 
-    def early_stop(self, epoch: int, accuracy: float, fairness_metric: float):
+    def early_stop(self, epoch: int, loss_value: float):
         def end():
-            self.stopped_epoch = epoch
             self.model.load_state_dict(self.best_weights)
             return True
-
-        if self.fairness_metric_name == DI_METRIC_NAME:
-            fairness_metric = 1 - fairness_metric
-            metric_condition = fairness_metric > self.best_fairness_metric
-        else:
-            metric_condition = self.best_fairness_metric > fairness_metric
 
         # First condition: reached the maximum amount of epochs
         if epoch + 1 == self.max_epochs:
             return end()
 
-        # Second condition: accuracy and fairness metric does not improve for patience epochs
-        if accuracy > self.best_accuracy and metric_condition:
-            self.best_accuracy = max(self.best_accuracy, accuracy)
-            self.best_fairness_metric = max(self.best_fairness_metric, fairness_metric)
+        # Second condition: loss value does not improve for patience epochs
+        if loss_value < self.best_loss:
+            self.best_loss = loss_value
             self.wait = 0
             self.best_weights = self.model.state_dict()
         else:

@@ -136,15 +136,15 @@ def train_and_predict_cho_classifier(
             y_pred_detached = y_pred.detach()
         # DP_Constraint
         if metric == "demographic_parity":
-            Pr_Ytilde1 = CDF_tau(y_pred_detached, h, TAU)
+            Pr_Ytilde1 = CDF_tau(y_pred_detached, H, TAU)
             for z in sensitive_attrs:
-                Pr_Ytilde1_Z = CDF_tau(y_pred_detached[z_b == z], h, TAU)
+                Pr_Ytilde1_Z = CDF_tau(y_pred_detached[z_b == z], H, TAU)
                 m_z = z_b[z_b == z].shape[0]
 
                 Delta_z = Pr_Ytilde1_Z - Pr_Ytilde1
                 Delta_z_grad = (
                     torch.dot(
-                        phi((TAU - y_pred_detached[z_b == z]) / h).view(-1),
+                        phi((TAU - y_pred_detached[z_b == z]) / H).view(-1),
                         y_pred[z_b == z].view(-1),
                     )
                     / H
@@ -152,7 +152,7 @@ def train_and_predict_cho_classifier(
                 )
                 Delta_z_grad -= (
                     torch.dot(
-                        phi((TAU - y_pred_detached) / h).view(-1), y_pred.view(-1)
+                        phi((TAU - y_pred_detached) / H).view(-1), y_pred.view(-1)
                     )
                     / H
                     / m
@@ -187,7 +187,7 @@ def train_and_predict_cho_classifier(
                             ).view(-1),
                             y_pred[(y_b == y) & (z_b == z)].view(-1),
                         )
-                        / h
+                        / H
                         / m_zy
                     )
                     Delta_zy_grad -= (
@@ -195,7 +195,7 @@ def train_and_predict_cho_classifier(
                             phi((TAU - y_pred_detached[y_b == y]) / H).view(-1),
                             y_pred[y_b == y].view(-1),
                         )
-                        / h
+                        / H
                         / m_y
                     )
 
@@ -233,14 +233,12 @@ def train_and_predict_cho_classifier(
             optimizer.step()
             costs.append(cost.item())
 
-        y_hat_valid = net(XZ_valid).squeeze().detach().cpu().numpy()
-        accuracy = (y_hat_valid.round() == Y_valid_np).mean()
-        f_cost = fairness_cost(y_hat_valid, Y_valid, Z_valid)
+        y_hat_valid = net(XZ_valid)
+        p_loss = loss_function(y_hat_valid.squeeze(), Y_valid)
+        cost = (1 - lambda_) * p_loss + fairness_cost(y_hat_valid, Y_valid, Z_valid)
 
         # Early stopping
-        if conditions.early_stop(
-            epoch=epoch, accuracy=accuracy, fairness_metric=f_cost
-        ):
+        if conditions.early_stop(epoch=epoch, loss_value=cost):
             break
 
     y_hat_test = net(XZ_test).squeeze().detach().cpu().numpy()
