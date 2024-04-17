@@ -48,24 +48,6 @@ def train_and_predict_jiang_classifier(net, fairness_dataset, device, lambda_val
     return y_pred
 
 
-def evaluate(
-    model, data_fitting_loss, fairness_penalty, x_val, y_val, z_val, device_gpu
-):
-    def accuracy(output, labels):
-        output = output.squeeze()
-        preds = (output > 0.5).type_as(labels)
-        correct = preds.eq(labels).double()
-        correct = correct.sum()
-        acc = correct.item() / len(labels)
-        return acc
-
-    prediction = model(x_val).detach().flatten()
-    loss_val = data_fitting_loss(prediction, y_val).item()
-    acc_val = accuracy(prediction, y_val)
-    dp_val = fairness_penalty(prediction, z_val, device_gpu).item()
-    return loss_val, acc_val, dp_val
-
-
 def regularized_learning(
     dataset_loader,
     x_val,
@@ -98,15 +80,14 @@ def regularized_learning(
                 continue
             loss.backward()
             optimizer.step()
-        (
-            loss_val,
-            acc_val,
-            dp_val,
-        ) = evaluate(
-            model, data_fitting_loss, fairness_penalty, x_val, y_val, z_val, device_gpu
-        )
+
+        # Compute validation loss
+        outputs = model(x_val).flatten()
+        loss_val = data_fitting_loss(outputs, y_val).item()
+        loss_val += penalty_coefficient * fairness_penalty(outputs, z_val, device_gpu)
+
         # Early stopping
-        if conditions.early_stop(epoch=epoch, accuracy=acc_val, fairness_metric=dp_val):
+        if conditions.early_stop(epoch=epoch, loss_value=loss_val):
             break
     y_test_pred = model(x_test).detach().flatten()
     return y_test_pred

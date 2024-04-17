@@ -7,8 +7,8 @@ protected:
   - 8
 lambda:
   - max:
-      - 5
-      - 5
+      - 1
+      - 1
       - 1
   - min:
       - 0
@@ -17,5 +17,5 @@ lambda:
   - step:
       - 0.1
       - 0.1
-      - 0.5
+      - 0.1
 seed: 0
