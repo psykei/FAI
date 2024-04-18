@@ -34,18 +34,6 @@ def create_cache_directory():
         CACHE_PATH.mkdir()
 
 
-def get_feature_data_type(dataset_name: str, index: int) -> str:
-    if dataset_name == "adult":
-        if index in [7, 8]:
-            return "discrete"
-        elif index == 0:
-            return "continuous"
-        else:
-            return "unknown"
-    elif dataset_name == "compas":
-        return "unknown"
-
-
 class TensorflowConditions(Callback):
 
     def __init__(self, patience: int):

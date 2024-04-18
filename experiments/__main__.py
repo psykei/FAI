@@ -4,9 +4,10 @@ import sys
 import numpy as np
 from torch import cuda
 from dataset.pytorch_data_pipeline import FairnessPyTorchDataset
-from experiments import CACHE_PATH, TensorflowConditions, get_feature_data_type, PyTorchConditions, \
+from experiments import CACHE_PATH, TensorflowConditions, PyTorchConditions, \
     PytorchNN, create_fully_connected_nn_tf, evaluate_predictions, create_cache_directory
-from experiments.configuration import PATH as CONFIG_PATH, NEURONS_PER_LAYER, EPOCHS, BATCH_SIZE, K
+from dataset import get_feature_data_type
+from experiments.configuration import PATH as CONFIG_PATH, NEURONS_PER_LAYER, EPOCHS, BATCH_SIZE, K, get_lambda_values
 from sklearn.model_selection import KFold
 from tensorflow.python.framework.random_seed import set_seed
 from experiments._logging import logger, enable_file_logging, LOG_INFO, disable_file_logging, exp_name, \
@@ -16,7 +17,7 @@ from tensorflow.python.framework.ops import disable_eager_execution
 from tensorflow import device as tf_device
 from torch import device as torch_device
 from dataset.loader import load_dataset
-from experiments.configuration import ADULT_PATIENCE, COMPAS_PATIENCE, from_config_file_to_dict
+from experiments.configuration import ADULT_PATIENCE, COMPAS_PATIENCE, from_yaml_file_to_dict
 from fairness.cho import train_and_predict_cho_classifier
 from fairness.fauci import train_and_predict_tf, create_fauci_network
 from fairness.jiang import train_and_predict_jiang_classifier
@@ -40,7 +41,7 @@ if __name__ == '__main__':
     # sort the files
     configuration_files.sort()
 
-    configurations = [from_config_file_to_dict(CONFIG_PATH / file_name) for file_name in configuration_files]
+    configurations = [from_yaml_file_to_dict(CONFIG_PATH / file_name) for file_name in configuration_files]
     create_cache_directory()
 
     for configuration in configurations:
@@ -49,11 +50,7 @@ if __name__ == '__main__':
         metric = configuration["metric"]
         protected = configuration["protected"]
         exp_seed = configuration["seed"]
-        lambda_info = {k: v for d in configuration['lambda'] for k, v in d.items()}
-        max_lambda_values = lambda_info["max"]
-        min_lambda_values = lambda_info["min"]
-        step_lambda_values = lambda_info["step"]
-        lambda_lists_of_values = [[round(value, 5) for value in np.arange(min_lambda_values[i], max_lambda_values[i], step_lambda_values[i])] + [max_lambda_values[i]] for i in range(len(protected))]
+        lambda_lists_of_values = get_lambda_values(configuration["lambda"])
 
         if dataset == "adult":
             patience = ADULT_PATIENCE
