@@ -114,5 +114,5 @@ def perform_analysis(configuration_file_names: list[str]):
                     df = results[dataset][metric][feature][method]
                     dfs.append(df)
                 metric_long_name = FAIRNESS_METRIC_LONG_NAMES[metric]
-                plot_fairness_comparison(dfs, dataset, feature, metric_long_name, "accuracy", list(results[dataset][metric][feature].keys()))
+                # plot_fairness_comparison(dfs, dataset, feature, metric_long_name, "accuracy", list(results[dataset][metric][feature].keys()))
                 plot_fairness_comparison(dfs, dataset, feature, metric_long_name, "f1", list(results[dataset][metric][feature].keys()))

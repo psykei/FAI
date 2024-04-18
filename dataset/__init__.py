@@ -17,6 +17,13 @@ def get_feature_data_type(dataset_name: str, index: int) -> str:
         else:
             return "unknown"
     elif dataset_name == "compas":
+        if index in [1, 5]:
+            return "discrete"
+        elif index == 3:
+            return "continuous"
+        else:
+            return "unknown"
+    else:
         return "unknown"
 
 
@@ -31,4 +38,9 @@ def get_feature_name(dataset_name: str, index: int) -> str:
         else:
             return "unknown"
     elif dataset_name == "compas":
-        return "unknown"
+        if index == 1:
+            return "sex"
+        elif index == 5:
+            return "ethnicity"
+        elif index == 3:
+            return "age"
