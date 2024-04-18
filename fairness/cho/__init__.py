@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
-from dataset.adult_pytorch_data_pipeline import CustomDataset
+from dataset.pytorch_data_pipeline import CustomDataset
 
 PATH = Path(__file__).parents[0]
 TAU = 0.5

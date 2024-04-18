@@ -1,8 +1,9 @@
 import os
 import random
+import sys
 import numpy as np
 from torch import cuda
-from dataset.adult_pytorch_data_pipeline import FairnessPyTorchDataset
+from dataset.pytorch_data_pipeline import FairnessPyTorchDataset
 from experiments import CACHE_PATH, TensorflowConditions, get_feature_data_type, PyTorchConditions, \
     PytorchNN, create_fully_connected_nn_tf, evaluate_predictions, create_cache_directory
 from experiments.configuration import PATH as CONFIG_PATH, NEURONS_PER_LAYER, EPOCHS, BATCH_SIZE, K
@@ -32,7 +33,10 @@ if __name__ == '__main__':
 
 
     # Read the configuration files (only yaml files)
-    configuration_files = [f for f in os.listdir(CONFIG_PATH) if f.endswith(".yml")]
+    # configuration_files = [f for f in os.listdir(CONFIG_PATH) if f.endswith(".yml")]
+    conf_file_name = sys.argv[1] + ".yml"
+    configuration_files = [CONFIG_PATH / conf_file_name]
+
     # sort the files
     configuration_files.sort()
 
