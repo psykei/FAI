@@ -87,6 +87,11 @@ class PyTorchConditions:
         self.max_epochs = max_epochs
         self.best_weights = None
 
+    def on_train_begin(self):
+        self.wait = 0
+        self.best_loss = math.inf
+        self.best_weights = self.model.state_dict()
+
     def early_stop(self, epoch: int, loss_value: float):
         def end():
             self.model.load_state_dict(self.best_weights)
