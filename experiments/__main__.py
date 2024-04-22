@@ -14,7 +14,6 @@ from experiments._logging import logger, enable_file_logging, LOG_INFO, disable_
     log_experiment_setup
 from tensorflow.python.compat.v2_compat import disable_v2_behavior
 from tensorflow.python.framework.ops import disable_eager_execution
-from tensorflow import device as tf_device
 from torch import device as torch_device
 from dataset.loader import load_dataset
 from experiments.configuration import ADULT_PATIENCE, COMPAS_PATIENCE, from_yaml_file_to_dict
@@ -28,7 +27,7 @@ if __name__ == '__main__':
     disable_eager_execution()
 
     # Set tensorflow device
-    tf_device('/physical_device:GPU:1')
+    # tf_device('/physical_device:GPU:1')
     # Set pytorch device
     current_device = torch_device('cuda:1') if cuda.is_available() else torch_device('cpu')
 
@@ -91,7 +90,6 @@ if __name__ == '__main__':
                         model = create_fauci_network(model, feature, protected_type, metric, lambda_value)
                         y_pred = train_and_predict_tf(model, train_data, valid_data, test, EPOCHS, BATCH_SIZE, callbacks, logger)
                         y_pred = np.squeeze(y_pred)
-                        del model
 
                     elif method in ["cho", "jiang"]:
                         model = PytorchNN(n_inputs=train.shape[1] - 1, n_layers=len(NEURONS_PER_LAYER) + 2, n_hidden_units=NEURONS_PER_LAYER)
@@ -102,7 +100,6 @@ if __name__ == '__main__':
                             y_pred = train_and_predict_cho_classifier(pt_dataset, model, metric, lambda_value, current_device, EPOCHS, BATCH_SIZE, callbacks)
                         else:
                             y_pred = train_and_predict_jiang_classifier(model, pt_dataset, current_device, lambda_value, EPOCHS, BATCH_SIZE, callbacks)
-                        del model
 
                     else:
                         raise ValueError(f"Unknown method {method}")
@@ -111,6 +108,7 @@ if __name__ == '__main__':
                     test_p = test.iloc[:, feature].reset_index(drop=True)
                     evaluate_predictions(test_p, y_pred, test_y, logger)
                     disable_file_logging()
+                    del model
                 print("\n")
             print("\n")
         print("\n")

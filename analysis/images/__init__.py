@@ -21,7 +21,7 @@ FAIRNESS_METRIC_SHORT_NAMES = {
 }
 METHOD_COLORS = {
     "fauci": "red",
-    "cho": "azure",
+    "cho": "lightblue",
     "jiang": "green",
     "vanilla": "black",
     "fnnc": "purple",

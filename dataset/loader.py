@@ -18,4 +18,8 @@ def load_dataset(dataset_name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     else:
         raise ValueError(f"Dataset {dataset_name} not supported.")
 
+    # Check of there are nan values in the dataset
+    if train.isnull().values.any() or test.isnull().values.any():
+        raise ValueError(f"Dataset {dataset_name} contains nan values.")
+
     return train, test

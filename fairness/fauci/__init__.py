@@ -1,10 +1,8 @@
 from logging import Logger
 from pathlib import Path
-from typing import Callable
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-from tensorflow.python.keras import Input
 from tensorflow.python.keras.callbacks import Callback
 from tensorflow.python.keras.losses import binary_crossentropy
 from tensorflow.python.keras.models import Model
@@ -13,6 +11,7 @@ from fairness.tf_metric import continuous_demographic_parity, continuous_dispara
     discrete_demographic_parity, discrete_equalized_odds, discrete_disparate_impact
 
 PATH = Path(__file__).parents[0]
+epsilon = 1e-5
 
 
 def create_fauci_network(
@@ -63,7 +62,7 @@ def create_fauci_network(
 
     def custom_loss(y_true, y_pred):
         fair_cost_factor = fairness_metric_function(y_true, y_pred)
-        return tf.cast(binary_crossentropy(y_true, y_pred), tf.float64) + tf.cast(lambda_value * fair_cost_factor, tf.float64)
+        return tf.cast(binary_crossentropy(y_true, y_pred) + epsilon, tf.float64) + tf.cast(lambda_value * fair_cost_factor, tf.float64)
 
     model.compile(loss=custom_loss, optimizer=Adam(), metrics=["accuracy"])
     return model
