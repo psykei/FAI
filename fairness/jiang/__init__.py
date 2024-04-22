@@ -5,6 +5,8 @@ import torch
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
 
+from experiments import PyTorchConditions
+
 PATH = Path(__file__).parents[0]
 
 
@@ -61,8 +63,8 @@ def regularized_learning(
     device_gpu,
     penalty_coefficient,
     data_fitting_loss,
-    num_epochs,
-    conditions
+    num_epochs: int,
+    conditions: PyTorchConditions,
 ):
     # mse regression objective
     # data_fitting_loss = nn.MSELoss()
@@ -70,6 +72,7 @@ def regularized_learning(
     # stochastic optimizer
     optimizer = torch.optim.Adam(model.parameters())
 
+    conditions.on_train_begin()
     for epoch in range(num_epochs):
         for i, (x, y, z) in enumerate(dataset_loader):
             outputs = model(x).flatten()

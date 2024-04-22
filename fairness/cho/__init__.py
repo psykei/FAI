@@ -4,7 +4,8 @@ import pandas as pd
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
-from dataset.pytorch_data_pipeline import CustomDataset
+from dataset.pytorch_data_pipeline import CustomDataset, FairnessPyTorchDataset
+from experiments import PyTorchConditions
 
 PATH = Path(__file__).parents[0]
 TAU = 0.5
@@ -92,14 +93,14 @@ def measures_from_y_hat(y, z, y_hat=None, threshold=0.5):
 
 
 def train_and_predict_cho_classifier(
-    dataset,
-    net,
-    metric,
-    lambda_,
+    dataset: FairnessPyTorchDataset,
+    net: nn.Module,
+    metric: str,
+    lambda_: float,
     device,
-    n_epochs,
-    batch_size,
-    conditions
+    n_epochs: int,
+    batch_size: int,
+    conditions: PyTorchConditions
 ):
     # Retrieve train/test split pytorch tensors for index=split
     train_tensors, valid_tensors, test_tensors = dataset.get_dataset_in_tensor()
@@ -211,6 +212,7 @@ def train_and_predict_cho_classifier(
                         return Delta_zy_grad
         return None
 
+    conditions.on_train_begin()
     for epoch in range(n_epochs):
         for i, (xz_batch, y_batch, z_batch) in enumerate(data_loader):
             xz_batch, y_batch, z_batch = (
