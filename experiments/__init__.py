@@ -27,7 +27,7 @@ METRIC_LIST_NAMES = [
     'disparate_impact',
     'equalized_odds'
 ]
-EPSILON = 1e-5
+EPSILON = 1e-4
 
 
 def create_cache_directory():
@@ -58,17 +58,18 @@ class TensorflowConditions(Callback):
             print(f"Stopping at epoch {epoch + 1}")
             self.model.stop_training = True
 
-        loss_value = logs['loss']
+        val_loss_value = logs['val_loss']
+        train_loss_value = logs['loss']
 
         # First condition: reached the maximum amount of epochs
         if epoch + 1 == self.params['epochs']:
             end()
 
         # Second condition: loss value does not improve for patience epochs
-        elif loss_value < EPSILON:
+        elif train_loss_value < EPSILON:
             end()
-        elif loss_value < self.best_loss:
-            self.best_loss = loss_value
+        elif val_loss_value < self.best_loss:
+            self.best_loss = val_loss_value
             self.wait = 0
             self.best_weights = self.model.get_weights()
         else:
