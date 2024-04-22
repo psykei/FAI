@@ -58,9 +58,12 @@ def plot_fairness_comparison(
     for df, method in zip(dfs, methods):
         # don't plot when lambda is 0 (this is like using a vanilla model)
         df_copy = df[df["lambda"] != 0]
+        # filter all data whose ml_metric is lower than 0.6 (degenerate cases)
+        df_copy = df_copy[df_copy[ml_metric] > 0.6]
         plt.scatter(df_copy[fairness_metric], df_copy[ml_metric], s=80, label=method, color=METHOD_COLORS[method], marker=METHOD_SHAPES[method])
     # Add Vanilla, i.e. Fauci when lambda is 0
     vanilla_df = dfs[0][dfs[0]["lambda"] == 0]
+    vanilla_df = vanilla_df[vanilla_df[ml_metric] > 0.6]
     plt.scatter(vanilla_df[fairness_metric], vanilla_df[ml_metric], s=80, label="Vanilla", color=METHOD_COLORS["vanilla"], marker=METHOD_SHAPES["vanilla"])
     plt.ylabel(ml_metric)
     plt.xlabel(fairness_metric)
