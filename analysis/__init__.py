@@ -47,6 +47,9 @@ def get_results_from_setup(
         eos.append(results["equalized_odds"])
         lambdas.append(lambda_value)
     results = [accs, precs, recs, f1s, aucs, dps, dis, eos, lambdas]
+    # prevent mean of empty slice
+    if not results[0]:
+        return [0.0 for _ in range(len(HEADER))]
     return [np.mean(result).mean() for result in results]
 
 

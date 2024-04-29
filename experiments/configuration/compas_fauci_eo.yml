@@ -8,7 +8,7 @@ protected:
 lambda:
   - max:
       - 100
-      - 10
+      - 7
       - 5
   - min:
       - 0
