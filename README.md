@@ -49,4 +49,4 @@ To analise the results for each method, run:
 
 To generate comparison images, run:
 
-```python analysis/__main__.py```
+```python images/__main__.py```
