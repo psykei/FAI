@@ -1,31 +1,53 @@
 from math import sqrt, pi
 from pathlib import Path
-
+import numpy as np
 import torch
 from torch import nn
-import torch.nn.functional as F
-from utils import PyTorchConditions
+from torch.utils.data import TensorDataset, DataLoader
 
+from experiments import PyTorchConditions
 
 PATH = Path(__file__).parents[0]
 
 
-def evaluate(
-    model, data_fitting_loss, fairness_penalty, x_val, y_val, z_val, device_gpu
-):
-    def accuracy(output, labels):
-        output = output.squeeze()
-        preds = (output > 0.5).type_as(labels)
-        correct = preds.eq(labels).double()
-        correct = correct.sum()
-        acc = correct.item() / len(labels)
-        return acc
+def train_and_predict_jiang_classifier(net, fairness_dataset, device, lambda_value, epochs, batch_size, conditions):
+    net = net.to(device)
+    test_sol = 1e-3
+    x_appro = torch.arange(test_sol, 1 - test_sol, test_sol).to(device)
+    KDE_FAIR = KDE_fair(x_appro)
+    penalty = KDE_FAIR.forward
+    # Fair classifier training
+    (
+        train_datasets,
+        valid_datasets,
+        test_datasets,
+    ) = fairness_dataset.get_dataset_in_tensor()
+    _, y_train, z_train, x_train = train_datasets
+    _, y_valid, z_valid, x_valid = valid_datasets
+    _, y_test, z_test, x_test = test_datasets
+    train_dataset = TensorDataset(x_train, y_train, z_train)
+    dataloader = DataLoader(train_dataset, batch_size, shuffle=True)
+    y_pred = regularized_learning(
+        dataloader,
+        x_valid,
+        y_valid,
+        z_valid,
+        x_test,
+        y_test,
+        z_test,
+        net,
+        penalty,
+        device,
+        lambda_value,
+        nn.functional.binary_cross_entropy,
+        epochs,
+        conditions
+    )
 
-    prediction = model(x_val).detach().flatten()
-    loss_val = data_fitting_loss(prediction, y_val).item()
-    acc_val = accuracy(prediction, y_val)
-    dp_val = fairness_penalty(prediction, z_val, device_gpu).item()
-    return loss_val, acc_val, dp_val
+    # Compute metrics
+    # Round to the nearest integer
+    y_pred = np.squeeze(np.array(y_pred))
+    return y_pred
 
 
 def regularized_learning(
@@ -41,17 +63,16 @@ def regularized_learning(
     device_gpu,
     penalty_coefficient,
     data_fitting_loss,
-    num_epochs=5000,
+    num_epochs: int,
+    conditions: PyTorchConditions,
 ):
     # mse regression objective
     # data_fitting_loss = nn.MSELoss()
 
     # stochastic optimizer
     optimizer = torch.optim.Adam(model.parameters())
-    conditions = PyTorchConditions(
-        fairness_metric_name="demographic_parity", model=model, max_epochs=num_epochs
-    )
 
+    conditions.on_train_begin()
     for epoch in range(num_epochs):
         for i, (x, y, z) in enumerate(dataset_loader):
             outputs = model(x).flatten()
@@ -62,18 +83,15 @@ def regularized_learning(
                 continue
             loss.backward()
             optimizer.step()
-        (
-            loss_val,
-            acc_val,
-            dp_val,
-        ) = evaluate(
-            model, data_fitting_loss, fairness_penalty, x_val, y_val, z_val, device_gpu
-        )
+
+        # Compute validation loss
+        outputs = model(x_val).flatten()
+        loss_val = data_fitting_loss(outputs, y_val).item()
+        loss_val += penalty_coefficient * fairness_penalty(outputs, z_val, device_gpu)
+
         # Early stopping
-        if conditions.early_stop(epoch=epoch, accuracy=acc_val, fairness_metric=dp_val):
+        if conditions.early_stop(epoch=epoch, loss_value=loss_val):
             break
-        # if epoch % 10 == 0:
-        #     print(f"Epoch {epoch}: loss={loss_val:.4f}, acc={acc_val:.4f}, dp={dp_val:.4f}")
     y_test_pred = model(x_test).detach().flatten()
     return y_test_pred
 
@@ -117,7 +135,6 @@ class KDE_fair:
 
         data = self.x_test.repeat_interleave(n).reshape((-1, n))
         train_x = x_train.unsqueeze(0)
-        # two_tensor = torch.tensor(2.).to(x_train.device)
         two_tensor = 2
         pdf_values = (
             (

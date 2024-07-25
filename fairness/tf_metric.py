@@ -298,6 +298,7 @@ def continuous_disparate_impact(
     max_protected = tf.math.reduce_max(unique_protected)
     interval = max_protected - min_protected
     step = tf.cast(interval * delta, tf.float32)
+    max_protected = tf.math.maximum(max_protected, min_protected + step)
     numbers_a = tf.map_fn(
         lambda value: tf.cast(
             tf.size(
@@ -336,7 +337,7 @@ def continuous_disparate_impact(
         ),
         tf.range(min_protected, max_protected, step),
     )
-    result = 1 - (tf.reduce_sum(impacts * numbers_a) / tf.reduce_sum(numbers_a))
+    result = 1 - tf.minimum(1., (tf.reduce_sum(impacts * numbers_a) / tf.reduce_sum(numbers_a)))
     return result
 
 

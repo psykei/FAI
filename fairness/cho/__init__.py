@@ -2,10 +2,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from torch import nn
+from torch import nn, optim
 from torch.utils.data import DataLoader
-from dataset.cho_data_pipeline import CustomDataset
-from utils import PyTorchConditions
+from dataset.pytorch_data_pipeline import CustomDataset, FairnessPyTorchDataset
+from experiments import PyTorchConditions
 
 PATH = Path(__file__).parents[0]
 TAU = 0.5
@@ -13,6 +13,8 @@ TAU = 0.5
 A = 0.4920
 B = 0.2887
 C = 1.1893
+H = 0.1
+DELTA = 1.0
 
 
 def q_function(x):
@@ -90,18 +92,15 @@ def measures_from_y_hat(y, z, y_hat=None, threshold=0.5):
     return pd.DataFrame([data], columns=columns)
 
 
-def train_fair_classifier(
-    dataset,
-    net,
-    optimizer,
-    lr_scheduler,
-    fairness,
-    lambda_,
-    h,
-    delta,
+def train_and_predict_cho_classifier(
+    dataset: FairnessPyTorchDataset,
+    net: nn.Module,
+    metric: str,
+    lambda_: float,
     device,
-    n_epochs=5000,
-    batch_size=500,
+    n_epochs: int,
+    batch_size: int,
+    conditions: PyTorchConditions
 ):
     # Retrieve train/test split pytorch tensors for index=split
     train_tensors, valid_tensors, test_tensors = dataset.get_dataset_in_tensor()
@@ -111,9 +110,7 @@ def train_fair_classifier(
 
     # Retrieve train/test split numpy arrays for index=split
     train_arrays, valid_arrays, test_arrays = dataset.get_dataset_in_ndarray()
-    X_train_np, Y_train_np, Z_train_np, XZ_train_np = train_arrays
     X_valid_np, Y_valid_np, Z_valid_np, XZ_valid_np = valid_arrays
-    X_test_np, Y_test_np, Z_test_np, XZ_test_np = test_arrays
     sensitive_attrs = dataset.sensitive_attrs
 
     custom_dataset = CustomDataset(XZ_train, Y_train, Z_train)
@@ -121,6 +118,8 @@ def train_fair_classifier(
         batch_size_ = XZ_train.shape[0]
     elif isinstance(batch_size, int):
         batch_size_ = batch_size
+    else:
+        raise ValueError("batch_size must be 'full' or an integer")
     data_loader = DataLoader(custom_dataset, batch_size=batch_size_, shuffle=True)
 
     pi = torch.tensor(np.pi).to(device)
@@ -128,9 +127,7 @@ def train_fair_classifier(
 
     loss_function = nn.BCELoss()
     costs = []
-    conditions = PyTorchConditions(
-        fairness_metric_name=fairness, model=net, max_epochs=n_epochs
-    )
+    optimizer = optim.Adam(net.parameters())
 
     def fairness_cost(y_pred, y_b, z_b):
         if isinstance(y_pred, torch.Tensor):
@@ -139,82 +136,83 @@ def train_fair_classifier(
             y_pred = torch.tensor(y_pred).to(device)
             y_pred_detached = y_pred.detach()
         # DP_Constraint
-        if fairness == "demographic_parity":
-            Pr_Ytilde1 = CDF_tau(y_pred_detached, h, TAU)
+        if metric == "demographic_parity":
+            Pr_Ytilde1 = CDF_tau(y_pred_detached, H, TAU)
             for z in sensitive_attrs:
-                Pr_Ytilde1_Z = CDF_tau(y_pred_detached[z_b == z], h, TAU)
+                Pr_Ytilde1_Z = CDF_tau(y_pred_detached[z_b == z], H, TAU)
                 m_z = z_b[z_b == z].shape[0]
 
                 Delta_z = Pr_Ytilde1_Z - Pr_Ytilde1
                 Delta_z_grad = (
                     torch.dot(
-                        phi((TAU - y_pred_detached[z_b == z]) / h).view(-1),
+                        phi((TAU - y_pred_detached[z_b == z]) / H).view(-1),
                         y_pred[z_b == z].view(-1),
                     )
-                    / h
+                    / H
                     / m_z
                 )
                 Delta_z_grad -= (
                     torch.dot(
-                        phi((TAU - y_pred_detached) / h).view(-1), y_pred.view(-1)
+                        phi((TAU - y_pred_detached) / H).view(-1), y_pred.view(-1)
                     )
-                    / h
+                    / H
                     / m
                 )
 
-                if Delta_z.abs() >= delta:
+                if Delta_z.abs() >= DELTA:
                     if Delta_z > 0:
-                        Delta_z_grad *= lambda_ * delta
+                        Delta_z_grad *= lambda_ * DELTA
                         return Delta_z_grad
                     else:
-                        Delta_z_grad *= -lambda_ * delta
+                        Delta_z_grad *= -lambda_ * DELTA
                         return Delta_z_grad
                 else:
                     Delta_z_grad *= lambda_ * Delta_z
                     return Delta_z_grad
 
         # EO_Constraint
-        elif fairness == "equalized_odds":
+        elif metric == "equalized_odds":
             for y in [0, 1]:
-                Pr_Ytilde1_Y = CDF_tau(y_pred_detached[y_b == y], h, TAU)
+                Pr_Ytilde1_Y = CDF_tau(y_pred_detached[y_b == y], H, TAU)
                 m_y = y_b[y_b == y].shape[0]
                 for z in sensitive_attrs:
                     Pr_Ytilde1_ZY = CDF_tau(
-                        y_pred_detached[(y_b == y) & (z_b == z)], h, TAU
+                        y_pred_detached[(y_b == y) & (z_b == z)], H, TAU
                     )
                     m_zy = z_b[(y_b == y) & (z_b == z)].shape[0]
                     Delta_zy = Pr_Ytilde1_ZY - Pr_Ytilde1_Y
                     Delta_zy_grad = (
                         torch.dot(
                             phi(
-                                (TAU - y_pred_detached[(y_b == y) & (z_b == z)]) / h
+                                (TAU - y_pred_detached[(y_b == y) & (z_b == z)]) / H
                             ).view(-1),
                             y_pred[(y_b == y) & (z_b == z)].view(-1),
                         )
-                        / h
+                        / H
                         / m_zy
                     )
                     Delta_zy_grad -= (
                         torch.dot(
-                            phi((TAU - y_pred_detached[y_b == y]) / h).view(-1),
+                            phi((TAU - y_pred_detached[y_b == y]) / H).view(-1),
                             y_pred[y_b == y].view(-1),
                         )
-                        / h
+                        / H
                         / m_y
                     )
 
-                    if Delta_zy.abs() >= delta:
+                    if Delta_zy.abs() >= DELTA:
                         if Delta_zy > 0:
-                            Delta_zy_grad *= lambda_ * delta
+                            Delta_zy_grad *= lambda_ * DELTA
                             return Delta_zy_grad
                         else:
-                            Delta_zy_grad *= lambda_ * delta
-                            return -lambda_ * delta * Delta_zy_grad
+                            Delta_zy_grad *= lambda_ * DELTA
+                            return -lambda_ * DELTA * Delta_zy_grad
                     else:
                         Delta_zy_grad *= lambda_ * Delta_zy
                         return Delta_zy_grad
         return None
 
+    conditions.on_train_begin()
     for epoch in range(n_epochs):
         for i, (xz_batch, y_batch, z_batch) in enumerate(data_loader):
             xz_batch, y_batch, z_batch = (
@@ -237,46 +235,13 @@ def train_fair_classifier(
             optimizer.step()
             costs.append(cost.item())
 
-            if lr_scheduler is not None:
-                lr_scheduler.step()
-
-        y_hat_valid = net(XZ_valid).squeeze().detach().cpu().numpy()
-        accuracy = (y_hat_valid.round() == Y_valid_np).mean()
-        f_cost = fairness_cost(y_hat_valid, Y_valid, Z_valid)
+        y_hat_valid = net(XZ_valid)
+        p_loss = loss_function(y_hat_valid.squeeze(), Y_valid)
+        cost = (1 - lambda_) * p_loss + fairness_cost(y_hat_valid, Y_valid, Z_valid)
 
         # Early stopping
-        if conditions.early_stop(
-            epoch=epoch, accuracy=accuracy, fairness_metric=f_cost
-        ):
+        if conditions.early_stop(epoch=epoch, loss_value=cost):
             break
 
-        # y_hat_train = net(XZ_train).squeeze().detach().cpu().numpy()
-        # df_temp = measures_from_y_hat(Y_train_np, Z_train_np, y_hat=y_hat_train, threshold=TAU)
-        # df_temp['epoch'] = epoch * len(data_loader) + i + 1
-
     y_hat_test = net(XZ_test).squeeze().detach().cpu().numpy()
-    # df_test = measures_from_y_hat(Y_test_np, Z_test_np, y_hat=y_hat_test, threshold=TAU)
     return y_hat_test
-
-
-class Classifier(nn.Module):
-    def __init__(self, n_layers, n_inputs, n_hidden_units):
-        super(Classifier, self).__init__()
-        layers = []
-
-        if n_layers == 1:  # Logistic Regression
-            layers.append(nn.Linear(n_inputs, 1))
-            layers.append(nn.Sigmoid())
-        else:
-            layers.append(nn.Linear(n_inputs, n_hidden_units[0]))
-            layers.append(nn.ReLU())
-            for i in range(1, len(n_hidden_units)):
-                layers.append(nn.Linear(n_hidden_units[i - 1], n_hidden_units[i]))
-                layers.append(nn.ReLU())
-            layers.append(nn.Linear(n_hidden_units[-1], 1))
-            layers.append(nn.Sigmoid())
-        self.layers = nn.Sequential(*layers)
-
-    def forward(self, x):
-        x = self.layers(x)
-        return x

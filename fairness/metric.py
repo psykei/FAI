@@ -2,7 +2,6 @@ import numpy as np
 
 EPSILON: float = 1e-2
 DELTA: float = 1e-2
-DISPARATE_IMPACT_THRESHOLD: float = 0.8
 
 
 class Strategy:
@@ -57,12 +56,10 @@ def single_conditional_probability_in_range(
 def demographic_parity(
     p: np.array,
     y: np.array,
-    epsilon: float = EPSILON,
     continuous: bool = False,
-    numeric: bool = True,
     delta: float = DELTA,
     strategy: int = Strategy.EQUAL,
-) -> bool or float:
+) -> float:
     """
     Demographic parity is a measure of fairness that measures if a value of a protected feature impacts the outcome of a
     prediction. In other words, it measures if the outcome is independent of the protected feature.
@@ -121,18 +118,16 @@ def demographic_parity(
                     np.abs(conditional_probability - absolute_probability)
                     * ((1 - (number_of_sample / len(p))) / (len(unique_p) - 1))
                 )
-    return parity < epsilon if not numeric else parity
+    return parity
 
 
 def disparate_impact(
     p: np.array,
     y: np.array,
-    threshold: float = DISPARATE_IMPACT_THRESHOLD,
     continuous: bool = False,
-    numeric: bool = True,
     delta: float = DELTA,
     strategy: int = Strategy.EQUAL,
-) -> bool or float:
+) -> float:
     """
     Disparate impact is a measure of fairness that measures if a protected feature impacts the outcome of a prediction.
     It has been defined on binary classification problems as the ratio of the probability of a positive outcome given
@@ -142,7 +137,6 @@ def disparate_impact(
     The output must be binary.
     :param p: protected feature
     :param y: output
-    :param threshold: threshold for disparate impact
     :param continuous: if True, calculate the continuous disparate impact
     :param numeric: if True, return the value of disparate impact instead of a boolean
     :param delta: approximation parameter for the calculus of continuous disparate impact
@@ -199,16 +193,14 @@ def disparate_impact(
                 result = 0
         impact = result
 
-    return impact > threshold if not numeric else impact
+    return impact
 
 
 def equalized_odds(
     p: np.array,
     y_true: np.array,
     y_pred: np.array,
-    epsilon: float = EPSILON,
     continuous: bool = False,
-    numeric: bool = True,
     strategy: int = Strategy.EQUAL,
 ) -> bool or float:
     """
@@ -219,9 +211,7 @@ def equalized_odds(
     :param p: protected feature
     :param y_true: ground truth
     :param y_pred: prediction
-    :param epsilon: threshold for equalized odds
     :param continuous: if True, calculate the continuous equalized odds
-    :param numeric: if True, return the value of equalized odds instead of a boolean
     :param strategy: the strategy to use for the calculation of equalized odds
     :return: True if equalized odds is satisfied, False otherwise
     """
@@ -310,5 +300,5 @@ def equalized_odds(
             eo = np.sum(eo * number_of_samples) / np.sum(number_of_samples)
         elif strategy == Strategy.INVERSE_FREQUENCY:
             eo = np.sum(eo * (1 - (number_of_samples / len(p))) / (len(unique_protected) - 1))
-    return eo < epsilon if not numeric else eo
+    return eo
 
