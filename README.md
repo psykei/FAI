@@ -2,7 +2,7 @@
 
 ## Description
 
-This repo contains the experiments for the paper "Analysing Fairness in Neural Networks under Constraint Injection with FaUCI".
+This repo contains the experiments for the paper mentioned in the title.
 
 ## Requirements
 
